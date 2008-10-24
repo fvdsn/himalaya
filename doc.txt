@@ -1,0 +1,119 @@
+Api générale.
+=============
+=============
+
+1) les différentes structures :
+===============================
+
+1.1) colorspace : hlColorSpace
+-------------------------------
+Un espace colorimétrique permet d'interpréter les
+données représantant une couleur.
+l'espace colorimétrique a trois caractéristiques : 
+	- le nombre de bits par canal : 8bit, 16bit, ou 32bit flottant.
+	- le nombre de canaux : [1,5] le dernier canal est toujours 
+	réservé pour l'alpha. les opérations pour les couleurs a un
+	seul canal doivent donc se faire avec les opérations sur l'alpha.
+	- le type d'espace : sRGBA, CMYK, LAB, etc...
+	des réglages plus précis tels que la différentiation entre le
+	sRGB et le AdobeRGB ne sont pas prises en compte dans le colorspace
+	pour la simple raison qu'elle ne sont jamais utilisées dans les 
+	opérations.
+
+	des opérations spécifiques de transformation de srgb->rgb peuvent
+	évidemment etre implémentées.
+
+1.2) couleur : hlColor.
+------------------------
+Permet de sauvegarder une couleur dans un certain espace colorimetrique.
+
+1.3) Raw : hlRaw.
+-----------------
+représente une image comme un buffer unique. est utilisé pour importer
+et exporter les images dans himalaya. 
+
+1.4) image : hlImage.
+---------------------
+représente une image que l'on peut modifier et manipuler 
+avec l'api d'himalaya.
+
+Le fonctionnement d'une hlImage est le suivant.
+lors de sa création elle possede plusieurs propriétés :
+	- sa taille
+	- son espace colorimétrique
+	- sa couleur de fond
+	- un éventuel bitmap de fond ( de la même taille que l'hlimage )
+	- une pile de procédures vide.
+	- un état original E0.
+	- une zone de rendu vide.
+
+si vous n'avez pas compris la signification de toutes les propriétés c'est
+normal :)
+
+le principe des manipulations d'une hlImage est le suivant :
+on va ajouter dans la pile des procédures un certain nombre de filtres,
+d'opérations de dessin et transformation qui vont créer une nouvelle
+image a partir de la couleur et du bitmap de fond. 
+
+Lorsqu'on accede a l'image, on obtiens toujours le résultat de la pile
+de procédures. 
+
+Le comportement d'une hlImage est entierement déterminé par les opérations suivantes :
+	1) addOpX(hlImg,param...)
+	Cette fonction ajoute la procédure X sur la pile de l'image hlImg, avec
+	les parametres "param, ...". différentes procédures peuvent être par 
+	exemple le dessin d'un cercle, un ajustement des couleurs, une 
+	conversion d'espace colorimétrique, un flou gaussien, etc...
+	2) remOp(hlImg)
+	Cette fonction enleve la procédure au dessus de la pile de l'image 
+	hlImg.
+	3) setRZ(hlImg,int x, int y, int xx, int yy, int zoom)
+	Cette fonction remplace la zone de rendu actuelle dans hlImg par un
+	rectangle de sommet gauche (x,y) de longueur xx, et de hauteur yy, 
+	avec un facteur de zoom de 2^zoom.
+	4) render(hlImg)
+	Cette fonction lance le calcul de l'ensemble des procédures nécessaires
+	a l'obtention des données de l'image contenue dans la zone de rendu, et
+	renvoie le résultat sous forme d'un hlRaw.
+
+	5) addModOpX(hlImg,param,...)
+	Cette fonction ajoute une procédure Modifiable X sur la pile de l'image
+	et renvoie une réference vers cette procédure modifiable.
+	6) toggleOp(X)
+	Active ou désactive l'exécution de l'opération modifiable X.
+	7) modOpX(X, param,...)
+	remplace l'operation modifiable X par une operation du même type,
+	mais dont les parametres peuvent être différents.
+
+	8) saveState(hlImg)
+	sauvegarde l'etat courant et renvoie une réference vers celui ci.
+	Cela veut dire qu'il sera toujours possible tant que cet état
+	existe d'obtenir un rendu de l'image tel qu'il est défini par
+	l'ensemble des parametres de celle ci au moment ou l'état a été
+	sauvegardé. ces parametres comprennent :
+	la couleur et le bitmap de fond, la pile de procédure, et la
+	zone de rendu. 
+	9) setState(hlImg, state)
+	modifie l'ensmble des parametres de l'image pour qu'ils correspondent
+	a ceux sauvegardés dans l'état. 
+	10) remState(state)
+	supprime l'état et l'ensemble des données associées.
+
+Notes sur l'état d'une image : 
+Il existe en permanence un état temporaire EE.
+Celui ci correspond au dernier état que l'on a chargé plus les éventuelles
+modifications que l'on a effectuées sur les parametres de l'image. Celui
+ci est automatiquement supprimé et recréé lorsqu'on charge un état 
+sauvegardé.
+
+Notes sur les opérations de blending :
+il existe des opérations spéciales appellées opérations de blending qui
+prennent en parametre une autre image et un état. si on lui donne EE comme
+état, alors il n'est pas garanti que le rendu de l'image soit identique
+a chaque rendu d'un même état. Vous vous rendrez sans doute compte
+que cela n'est jamais garanti car une image en parametre du blend peut
+elle même contenir des opérations de blend sur état temporaire. 
+
+Il est possible pour une opération de blending d'appeller comme
+image en parametre l'image sur laquelle elle s'applique, mais alors
+l'etat correspondant ne doit pas contenir cette opération. 

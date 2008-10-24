@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+
+env = Environment(	CC = 'gcc', 
+			CCFLAGS = '-g -Wall -Wextra `pkg-config clutter-0.8 --cflags`',
+			LINKFLAGS = '`pkg-config clutter-0.8 --libs`',
+			LIBS = ['IL','ILU','m'], 
+			LIBPATH = '.' )
+env.Program(	'a.bin', 
+		[	#'regressions.c', 
+			'hlColorSpace.c', 
+			'hlColor.c',
+			'hlTile.c',
+			'hlRaw.c',
+			'hlImg.c',
+			'hlParam.c',
+			'hlFrame.c',
+			'hlAdjOp.c',
+			'hlRegion.c',
+			'hlADT.c',
+			'hlBlendOp.c',
+			'hlDrawOp.c',
+			'hlUndo.c',
+			'hlDebug.c',
+			'uiMain.c'])
+
+
+#Scons examples in case you need it...
+#Library('foo', ['a.c','b.c'] )
+#Program('bar', ['d.c','e.c'], LIBS=['foo'], LIBPATH='.')

@@ -1,0 +1,23 @@
+Himalaya est une librarie de dessin 2D
+adaptée aux images de grande taille. Supporte
+8 et 32bit par canal, 
+
+Compilation :
+¨¨¨¨¨¨¨¨¨¨¨¨¨
+dépendances : 
+	Scons
+	gcc
+	Clutter >0.8
+	libDevil
+ensuite, taper scons dans le répertoire src.
+l'éxécutable s'appelle a.bin
+
+Organisation du code :
+¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨
+La doc se trouve dans les .h
+Les structures intéressantes sont
+hlFrame.c/h
+hlImg.c/h
+
+Un exemple d'utilisation de l'api se
+trouve en bas de hlImg.c en commentaires.  
