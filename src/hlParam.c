@@ -9,6 +9,15 @@
 #define HL_NUM(p,x) p ->num[x]
 #define HL_CLR(p,x) p ->color[x]
 
+struct hl_param_prop_class{
+	char *name;
+	int  vector_size;
+	int  order;
+};
+struct hl_param_class{
+	char *name;
+};
+
 struct hl_param {
 	int locked;
 	int id; 
@@ -29,7 +38,7 @@ extern hlOpClass op_library[]; /*hlOp.c*/
 hlParam *hlNewParam(enum hl_op_id id){
 	hlParam* p = (hlParam*)malloc(sizeof(hlParam));
 	hl_debug_mem_alloc(HL_MEM_PARAM);
-	assert(op_library[id].id == id);
+	assert(op_library[id].id == (int)id);
 	memset(p,0,sizeof(hlParam));
 	p->id = id;
 	

@@ -30,15 +30,6 @@ int hlTileSize(hlCS cs){
 				case 5: {size=HL_TILEWIDTH_8B5;break;}
 			}
 		}
-		case HL_16B:{
-			switch (hlCSGetChan(cs)){
-				case 1: {size=HL_TILEWIDTH_16B1;break;}
-				case 2: {size=HL_TILEWIDTH_16B2;break;}
-				case 3: {size=HL_TILEWIDTH_16B3;break;}
-				case 4: {size=HL_TILEWIDTH_16B4;break;}
-				case 5: {size=HL_TILEWIDTH_16B5;break;}
-			}
-		}
 		case HL_32B:{
 			switch (hlCSGetChan(cs)){
 				case 1: {size=HL_TILEWIDTH_32B1;break;}
@@ -60,7 +51,6 @@ void hlTileZeroes(hlTile *tile, hlCS cs){
 }
 void hlTileRandom(hlTile *tile, hlCS cs){
 	uint8_t* d8 	= HL_DATA_8B(tile);
-	uint16_t* d16 	= HL_DATA_16B(tile);
 	float* d32 	= HL_DATA_32B(tile);
 	const int chan = hlCSGetChan(cs);
 	int c = chan;
@@ -70,8 +60,6 @@ void hlTileRandom(hlTile *tile, hlCS cs){
 		while(c--){
 			if(HL_8B == hlCSGetChan(cs))
 				d8[i] = (uint8_t)(random()%255);
-			else if(HL_16B == hlCSGetChan(cs))
-				d16[i] = (uint16_t)(random()%65535);
 			else
 				d32[i] = (float)(random()%100000)/100000.0;
 		}
@@ -95,8 +83,6 @@ float hlTileGetXYC( 	hlTile *tile,
 			unsigned int chan){
 	if(HL_8B == hlCSGetBpc(cs))
 		return (float)(HL_DATA_8B(tile)[HL_XYC(x,y,chan)]) / 255.0;
-	else if (HL_16B == hlCSGetBpc(cs))
-		return (float)(HL_DATA_16B(tile)[HL_XYC(x,y,chan)]) / 65535.0;
 	else
 		return HL_DATA_32B(tile)[HL_XYC(x,y,chan)];
 }
@@ -105,7 +91,7 @@ hlTile *hlTileDup(const hlTile *src, hlCS cs){
 	memcpy(tile,src,hlTileSize(cs));
 	return tile;
 }
-char hl_float_to_ascii(float intensity){
+static char hl_float_to_ascii(float intensity){
 	char table[8] = {'.',
 			'^',
 			':',

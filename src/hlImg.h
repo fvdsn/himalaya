@@ -14,97 +14,200 @@
 #define HL_STATE_CURRENT 0 
 #define HL_STATE_UNSAVED 0 /* the current unsaved image state */
 
-/***********************************************+
- * 	Images functions 			|
- * *********************************************/
-
-/* ############# IMG NEW #############*/
-/* creates Img with bg color 'color', size sx,sy in pixels,
- * colorspace herited from the color */
+/**
+ * Creates Img with bg color 'color', size sx,sy in pixels,
+ * colorspace herited from the color,
+ * @param c 	: the background color
+ * @param sx 	: the width of the default render region in pixels
+ * @param sy 	: the height of the default render region in pixels
+ * @return 	: a new image filled will color c and with colorspace of c
+ */
 hlImg* hlNewImg(hlColor c, int sx, int sy);
-
-/*creates Img from bitmap in frame. inherits all it's properties*/
+/**
+ * Creates Img from bitmap in frame. inherits all it's properties
+ * @param frame : the frame used as the image background / source.
+ * @return  	: a new image with a default render region the size of
+ * 		the frame, with the same colorspace and contents.
+ * 		You should not modify the source once you have set it.
+ */
 hlImg* hlNewImgFromSource(hlFrame *frame);
+/**
+ * Frees all resources used by the img.
+ * @param img : the img that will be freed.
+ */
 void   hlFreeImg(hlImg* img);
 
-/* ############ REGION ###############*/
-/* changes the region to be rendered, the region can be bigger than the image. 
- * pixels outside will be rendered as transparent black */
+/*------------- REGION -------------*/
+
+/**
+ * Changes the region to be rendered, the region can be bigger than the image. 
+ * pixels outside will be rendered as transparent black 
+ * @param img 	: the image with the new render region
+ * @param r 	: the new render region.
+ */
 void 	 hlImgSetRegion(hlImg *img, hlRegion r);
+/**
+ * Returns the current render region of the image.
+ * @param img 	: the image.
+ * @return 	: the current region of img.
+ */
 hlRegion hlImgGetRegion(hlImg *img);
 
-/* ###### OPERATION INSERTION #######*/
+/*------------- OPERATION -------------*/
+
+/**
+ * Returns the operation count of a state.
+ * @param img 	: the image.
+ * @param state : a state of the image. 
+ * @return 	: the count of operation in the image state.
+ */
 int hlImgGetOpCount(hlImg *img, hlState state);
-/* Insert an operation in the image operation list. the new
- * operation has the specified index. Makes sure that tiles made
- * obsolete by the additions are removed, and makes sure that the top
- * operation has caching enabled. Disable caching for the old top
- * operation. 
- * Index 0 represents adding it to the bottom of the op list.
- * Index >= hlImgGetOpCount() add it at the top. sends warning
- * if Index > hlImgGetOpCount();
+/**
+ * Puts a new operation on top of the operation list of the current
+ * state. That means add an operation that will be executed after
+ * all the previous that has been saved in the state. 
+ * @param img 	: the image
+ * @param p 	: the parameter of the new operation
+ * @return 	: a reference that can be used to  find this operation in
+ * a different saved state. 
  */
-void hlImgInsertNewOp(hlImg *img, hlParam *p,unsigned int index);
-
-/* Removes the operation at specified index and frees it and all
- * it's data. Makes sure that tiles made obsolete by the removal are
- * purged from caches, and makes sure that the top operation has 
- * caching enabled. 
- * Index 0 removes bottom op. Index >= hlImgGetOpCount() - 1 removes
- * top op. WARNING if index >= hlImgGetOpCount()
+hlOpRef hlImgPushNewOp(hlImg *img, hlParam *p);
+/**
+ * Puts a new blending operation on top of the image operation list 
+ * @param img 		: the image where the operation will be added.
+ * @param blend_mode	: the operation id that corresponds to the blending mode.
+ * @param up 		: the image that will be blended onto
+ * @param up_state	: the state of the blended image. if it is unsaved, 
+ * 			it will be saved automatically.
+ * @param alpha		: the alpha (linear) blending parameter
+ * @param mix		: the mix (nonlinear) blending parameter. 
  */
-void hlImgRemoveOp(hlImg *img, unsigned int topindex);
+hlOpRef hlImgPushNewBlendOp(	hlImg *img,
+				int blend_mode, 
+				hlImg *up, 
+				hlState up_sate, 
+				float *alpha, 
+				float *mix);
+/**
+ * Makes the current without the current top operation.  
+ * @param img 	: the image
+ * @return 	: the ref of the popped operation 
+ */
+hlOpRef hlImgPopOp(hlImg *img);
+/**
+ * Adds a new operation to the operation stack and makes it the
+ * current top operation.  
+ * @param img 	: the image
+ * @return 	: the ref of the popped operation 
+ */
+hlOpRef hlImgPushOp(hlImg *img,hlOp * op);
+/** 
+ * Returns the parameter of an operation in the current state
+ * for direct modification access. 
+ * @param img 	: the image
+ * @param ref 	: the reference of the operation that will be modified.
+ * @return 	: the parameter that can be modified. Call hlImgEndModOp after
+ * 		the parameter has been modified to clean stuff up.
+ */
+hlParam * hlImgModOpBegin(hlImg *img, hlOpRef ref);
+/**
+ * Closes the operation modification
+ * @param img : the image.
+ * @parm ref : the modified operation OpRef
+ */
+void      hlImgModOpEnd(hlImg *img, hlOpRef ref);
+/**
+ * Marks the operation as having a very high probability
+ * of beeing modified.
+ * @param img : the image.
+ * @param ref : the operation likely to be modified 
+ */
+void hlImgModOpHint(hlImg *img, hlOpRef ref);
 
-/* puts an operation on top of the image operation list */
-void hlImgPushNewOp(hlImg *img, hlParam *p);
-/* puts a new blending operation on top of the image operation list */
-void hlImgPushNewBlendOp(hlImg *img, int id, hlImg *up, float *alpha, float *mix);
-/* removes the top operation, frees it and all its data */
-void hlImgPopOp(hlImg *img);
+/*------------- STATE -------------*/
 
-/*----------------------------------------------+
- * 	Operation Modifications 		|
- *---------------------------------------------*/
-
-hlParam * hlImgModOp(hlImg *img, unsigned int ref);
-void 	  hlImgEndModOp(hlImg *img, unsigned int ref);
-/* Inserts a modifiable operation in the img. The parameters of theses
- * operations can be changed and the image rerendered.*/
-unsigned int hlImgPushNewModOp(hlImg *img, hlParam *p);
-
-/*----------------------------------------------+
- * 	State Operations 			|
- *---------------------------------------------*/
-
-/* the default unsaved state is HL_STATE_UNSAVED. Saving 
+/**
+ * the default unsaved state is HL_STATE_UNSAVED. Saving 
  * the states returns an int that can be used as
- * a reference to return to the saved state.*/
+ * a reference to return to the saved state.
+ */
 hlState hlImgStateSave(hlImg *img);
-/* returns to the saved state. if the new state does not exist, the
+/**
+ * returns to the saved state. if the new state does not exist, the
  * current state is kept, and it returns 0. 
- * unsaved changes are discareded.returns the old state.*/ 
+ * unsaved changes are discareded.returns the old state.
+ */ 
 hlState hlImgStateLoad(hlImg *img, hlState s);
-/* returns the current state */
+/**
+ * returns the current state 
+ */
 hlState hlImgStateGet(hlImg *img);
-/* returns a new state with the same data as original, but the original
- * can be safely removed without altering the new one*/
+/** 
+ * returns a new state with the same data as original, but the original
+ * can be safely removed without altering the new one
+ */
 hlState hlImgStateDup(hlImg *img, hlState s);
-/* returns 1 if the state exists */
+/**
+ * returns 1 if the state exists 
+ */
 hlState hlImgStateExists(hlImg *img, hlState s);
-/* removes s*/
+/**
+ * removes s
+ */
 hlState hlImgStateRem(hlImg *img, hlState s);
 
-void hlPrintImg(hlImg *img, hlState s);
+/*------------- INHERITED FROM HLFRAME -------------*/
 
-/* functions inherited from hlFrame : */
+/** 
+ * Prints the internal representation of the image in the console
+ * @param img 	: the image to be printed
+ * @param s	: the state that will be printed.
+ */
+void 	 hlPrintImg(hlImg *img, hlState s);
+/**
+ * Returns the width in pixel of the current render region at zoom level z.
+ * @param img 	: the image.
+ * @param z	: the zoom level [0,31]
+ * @return	: the width in pixel of the render region.
+ */
 uint32_t hlImgSizeX(hlImg *img, uint32_t z);
+/**
+ * Returns the height in pixel of the current render region at zoom level z.
+ * @param img 	: the image.
+ * @param z	: the zoom level [0,31]
+ * @return	: the height in pixel of the render region.
+ */
 uint32_t hlImgSizeY(hlImg *img, uint32_t z);
+/**
+ * Returns the width in tiles of the current render region at zoom level z.
+ * @param img 	: the image.
+ * @param z	: the zoom level [0,31]
+ * @return	: the width in tiles of the render region.
+ */
 uint32_t hlImgTileX(hlImg *img, uint32_t z);
+/**
+ * Returns the height in tiles of the current render region at zoom level z.
+ * @param img 	: the image.
+ * @param z	: the zoom level [0,31]
+ * @return	: the height in tiles of the render region.
+ */
 uint32_t hlImgTileY(hlImg *img, uint32_t z);
+/**
+ * Returns the number of zoom levels in the image.
+ * @param img 	: the image.
+ * @return	: the zoom level where all the data is in a tile. [0,31]
+ */
 uint32_t hlImgDepth(hlImg *img);
+/**
+ * Returns the colorspace of the last operation in the current state.
+ * @param img 	: the image.
+ * @return	: the colorspace of the render in the current state.
+ */
 hlCS 	 hlImgCS(hlImg *img);
-/* returns a tile from the image for reading purpose, do not modify.
- * crashes if image hasn't yet been rendered */
+/**
+ * returns a tile from the image for reading purpose, do not modify.
+ * crashes if image hasn't yet been rendered 
+ */
 hlTile * hlImgTileRead(	hlImg *img,
 			hlState s,
 			int tx,
@@ -161,7 +264,7 @@ void 	hlOpCacheSet(hlOp* op, hlTile*tile, int tx, int ty,unsigned int tz);
 
 /*returns the tile in the cache. returns NULL if there is no tile in
  * the cache. WARNING any modification of the returned tile will modify
- * the cache ass well. use hlTileDup() if you plan to modify the tile*/
+ * the cache as well. use hlTileDup() if you plan to modify the tile*/
 hlTile *hlOpCacheGet(hlOp* op, int tx, int ty, unsigned int tz);
 
 /* renders the tile in the designed op and below. if an operation

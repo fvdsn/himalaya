@@ -4,7 +4,7 @@
 #include <assert.h>
 
 /* 	hlNewCS(...)/hlCSCopy(...) 		*/
-int  hl_default_space_chan(HLSPACE space){
+static int  hl_default_space_chan(hlSpace space){
 	switch(space){
 		case HL_RAW  : return 1 ; 
 		case HL_GRAY : return 2 ; 
@@ -21,7 +21,7 @@ int  hl_default_space_chan(HLSPACE space){
 		}
 	}
 }
-hlCS hlNewCS(HLBPC bitperchannel, HLSPACE space){
+hlCS hlNewCS(hlBpc bitperchannel, hlSpace space){
 	hlCS colorspace;
 	hlCSSetBpc(&colorspace, bitperchannel);
 	hlCSSetChan(&colorspace, hl_default_space_chan(space));
@@ -33,20 +33,19 @@ hlCS hlCSCopy(hlCS colorspace){
 }
 
 /* 	hlCSGet___(...)				*/
-HLBPC   hlCSGetBpc(hlCS cs){
+hlBpc   hlCSGetBpc(hlCS cs){
 	return cs.bpc;
 }
 int     hlCSGetChan(hlCS cs){
 	return cs.chan;
 }
-HLSPACE hlCSGetSpace(hlCS cs){
+hlSpace hlCSGetSpace(hlCS cs){
 	return cs.space;
 }
 int     hlCSGetBpp(hlCS cs){
 	int chan = hlCSGetChan(cs);
 	switch (hlCSGetBpc(cs)){
 		case HL_8B  : return chan;
-		case HL_16B : return 2*chan;
 		case HL_32B : return 4*chan;
 	}
 	return 0;
@@ -61,7 +60,7 @@ int  hlCSEqual(hlCS a, hlCS b){
 }
 
 /*	hlCSSet___(...) 			*/
-void hlCSSetBpc(hlCS* cs, HLBPC bitperchannel){
+void hlCSSetBpc(hlCS* cs, hlBpc bitperchannel){
 	cs->bpc = bitperchannel;
 	return;
 }
@@ -70,7 +69,7 @@ void hlCSSetChan(hlCS* cs, int channels){
 	cs->chan = channels;
 	return;
 }
-void hlCSSetSpace(hlCS* cs, HLSPACE space){
+void hlCSSetSpace(hlCS* cs, hlSpace space){
 	cs->space = space;
 }
 
@@ -79,7 +78,6 @@ void hlPrintCS(hlCS cs){
 	printf("<hlCS> ");
 	switch(hlCSGetBpc(cs)){
 		case HL_8B  : { printf("HL_INT8, ");  break; }
-		case HL_16B : { printf("HL_INT16, "); break; }
 		case HL_32B : { printf("HL_FLT32, "); break; }
 		default : printf("ERROR, ");
 	}

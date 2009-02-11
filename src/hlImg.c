@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -17,16 +18,14 @@ struct hl_img{
 };
 struct hl_op{
 	struct hl_op* down;
-	int caching;		/*always cache if true */
-	int modifiable;		
-	unsigned int refcount; /*count of saved state depending on this op*/
-	unsigned int ref;	/*number unique to this operation, shared
-				 *with operations duplicated from this one,
-				 *because of modification of this op, or 
-				 *a child one */
-	unsigned int id;	/*what the operation does*/
-	unsigned int type;	/*broad category of operation (blend,rot,...)*/
-	unsigned int index;	/*height of operation from bottom*/
+	int caching;	/*always cache if true */
+	int refcount; 	/*count of saved state depending on this op*/
+	hlOpRef ref;	/*number unique to this operation, shared
+			 *with operations duplicated from this one,
+			 *because of modification of this op, or 
+			 *a child one */
+	int id;		/*what the operation does*/
+	int type;	/*broad category of operation (blend,rot,...)*/
 	void (*render)(hlTile *dst, hlParam *p);
 	struct hl_param *param;	
 	hlFrame *cache;
@@ -64,49 +63,37 @@ hlOpClass op_library[HL_OP_COUNT] = { /*see hlParam.h*/
 hlImg* hlNewImg(hlColor color,int sx, int sy){
 	hlImg* img = (hlImg*)malloc(sizeof(hlImg));
 	hl_debug_mem_alloc(HL_MEM_IMG);
-	img->top = NULL;
-	img->region = hlNewRegion(0,0,sx,sy,0);
-	img->statelib = hlNewHash(1009);
-	img->state = HL_STATE_UNSAVED;
-	img->source = hlNewFrame(color,sx,sy);
+	img->top 	= NULL;
+	img->region 	= hlNewRegion(0,0,sx,sy,0);
+	img->statelib 	= hlNewHash(1009);
+	img->state 	= HL_STATE_UNSAVED;
+	img->source 	= hlNewFrame(color,sx,sy);
 	return img;
 }
 hlImg* hlNewImgFromSource(hlFrame *frame){
 	hlImg* img = (hlImg*)malloc(sizeof(hlImg));
 	hl_debug_mem_alloc(HL_MEM_IMG);
-	img->top = NULL;
-	img->region = hlNewRegion(	0,0,
+	img->top 	= NULL;
+	img->region 	= hlNewRegion(	0,0,
 					hlFrameSizeX(frame,0),
 					hlFrameSizeY(frame,0),
 					0 			);
-	img->statelib = hlNewHash(101);
-	img->state = HL_STATE_UNSAVED;
-	hlFrameMipMap(frame);
-	img->source = frame;
+	img->statelib 	= hlNewHash(1009);
+	img->state 	= HL_STATE_UNSAVED;
+	img->source 	= frame;
+	hlFrameMipMap(frame);	/*TODO remove that requirement */ 
 	return img;
 }
-/* 	Cleaning Operations 	*/
-hlOp* hl_img_purge_unsaved(hlOp *op){
-/* frees any unsaved operation from and below op,
- * returns the first saved operation found */
-	hlOp * tmp;
-	while(op){
-		tmp = op->down;
-		if(op->refcount == 0){
-			hlFreeOp(op);
-		}
-		else{
-			return op;
-		}
-		op = tmp;
-	}
-	return NULL;
-}
-void hl_img_purge_cache(hlImg *img, hlOp * op){
-	/* empties the caches of all operations above and equal index.
-	 * this is used when you insert or remove an operation, the
-	 * cached results above are not valid anymore and must be 
-	 * purged */
+
+/*------------- CLEANUP OPERATIONS -------------*/
+
+/** 
+ * empties the caches of all operations above and equal index.
+ * this is used when you insert or remove an operation, the
+ * cached results above are not valid anymore and must be 
+ * purged 
+ */
+/*static void hl_img_purge_cache(hlImg *img, hlOp * op){
 	hlOp* tmp = img->top;
 	while(tmp){
 		if(tmp->cache){
@@ -117,10 +104,12 @@ void hl_img_purge_cache(hlImg *img, hlOp * op){
 		}
 		tmp = tmp->down;
 	}
-}
-/* 	State Operations 	*/
-hlOp * hl_img_get_top_op(hlImg *img, unsigned int state){
-	if(state){
+}*/
+
+/*------------- STATE -------------*/
+
+hlOp* hl_img_get_top_op(hlImg *img, hlState state){
+	if(state != HL_STATE_UNSAVED && state != HL_STATE_CURRENT){
 		return (hlOp*)hlHashGet(img->statelib,state);
 	}
 	else {
@@ -128,7 +117,7 @@ hlOp * hl_img_get_top_op(hlImg *img, unsigned int state){
 	}
 }
 hlState hl_get_new_state(){
-	static int state = 0;
+	static int state = 1;
 	return state++;
 }
 hlState hlImgStateSave(hlImg *img){
@@ -172,6 +161,7 @@ hlState hlImgStateLoad(hlImg *img, hlState state){
 		return state;
 	}else {
 		if (oldstate == HL_STATE_UNSAVED){
+			/* free unsaved op */
 			while(op){
 				tmp = op->down;
 				if(op->refcount == 0){
@@ -188,6 +178,7 @@ hlState hlImgStateLoad(hlImg *img, hlState state){
 		return oldstate;
 	}
 }
+
 hlState hlImgStateGet(hlImg *img){
 	return img->state;
 }
@@ -227,30 +218,31 @@ hlRegion hlImgGetRegion(hlImg *img){
 	return img->region;
 }
 
+/*------------- OPERATION -------------*/
+
 /* 	hlImgInsertOp(...) / hlImgRemoveOp(...) / etc... 	*/
-hlOp* hlImgForkOp(hlImg *img, unsigned int ref_or_index, int useindex);
-unsigned int hlImgGetOpCount(hlImg *img, hlState state){
+int hlImgGetOpCount(hlImg *img, hlState state){
 	hlOp* top = hl_img_get_top_op(img,state);
-	if(top){
-		return top->index + 1;
+	int i = 0;
+	while(top){
+		top = top->down;
+		i++;
 	}
-	else{
-		return 0;
-	}
+	return i;
 }
-hlOp* hl_img_get_op(hlImg *img, hlState state, unsigned int index){
+/*static hlOp* hl_img_get_op(hlImg *img, hlState state, hlOpRef ref){
 	hlOp *op = hl_img_get_top_op(img,state);
 	while(op){
-		if(op->index == index){
+		if(op->ref == ref){
 			return op;
-		}else if(op->index < index){
+		}else if(op->ref < ref){	/TODO this could blow things up/
 			return NULL;
 		}
 		op = op->down;
 	}
 	return NULL;
-}
-void insert_op(hlImg *img, hlOp *up, hlOp* newop, hlOp *down){
+}*/
+static void insert_op(hlOp *up, hlOp* newop, hlOp *down){
 	if(newop == NULL){
 		printf("WARNING : insert_op: inserting NULL op, nothing inserted\n");
 		return;
@@ -258,157 +250,89 @@ void insert_op(hlImg *img, hlOp *up, hlOp* newop, hlOp *down){
 	if(up == NULL){ /*inserting top op*/
 		if(down == NULL){ /*inserting op in empty list*/
 			newop->down = NULL;
-			newop->index = 0;
 		}else{
 			newop->down = down;
-			newop->index = down->index + 1;
 		}
-		img->top = newop;
 	}else{
 		if(down == NULL){ /*inserting bottom op*/
 			newop->down = NULL;
-			newop->index = 0;
 		}else{ /*inserting op in middle of op list */
 			newop->down = down;
-			newop->index = down->index + 1;
 		}
 		up->down = newop;
-		assert(up->index == newop->index + 1);
 	}
-	hlParamLock(op->param);
-	img->state = HL_STATE_UNSAVED;
+	hlParamLock(newop->param);
 	/*TODO check for forked states */
 }
-void hlImgInsertNewOp(hlImg *img, hlParam *p, unsigned int index){
-	hlOp*newop = hlNewOp(p);
-	hlOp*op = img->top;
-	hlOp*op_up = NULL;
-
-	while(op){
-		if(op_up == NULL){ 		/*op == top op*/
-			if(index > op->index){	/*inserting on top*/
-				if(index > op->index + 1){
-					printf("WARNING : hlImgInsertNewOp,"
-						"index(%d) > opCount(%d), op "
-						"inserted on top\n",
-						index, op->index + 1);
-				}
-				newop->down = op;
-				newop->index = op->index + 1;
-				newop->img = img;
-				img->top = newop;
-				hlParam
-	//TODO
-	}}}}
-
-void hlImgPopOp(hlImg *img){
+hlOpRef hlImgPopOp(hlImg *img){
 	hlOp *tmp = NULL;
+	hlOpRef ref = 0;
+	img->state = HL_STATE_UNSAVED;
 	if(img->top){
+		ref = img->top->ref;
 		tmp = img->top;
 		img->top = tmp->down;
 		if(tmp->refcount == 0){
 			hlFreeOp(tmp);
 		}
+		return ref;
+	}else{
+		printf("WARNING: hlImgPopOp(...) : nothing to pop.\n");
+		return 0;
 	}
-	img->state = HL_STATE_UNSAVED;
 }
-void hlImgPushNewOp(hlImg *img, hlParam *p){
+hlOpRef hlImgPushNewOp(hlImg *img, hlParam *p){
 	hlOp* newop = hlNewOp(p);
-	insert_op(img,NULL,newop,img->top);
+	insert_op(NULL,newop,img->top);
+	img->state  = HL_STATE_UNSAVED;
+	img->top    = newop;
+	newop->img = img;
+	return newop->ref;
 }
-/*	hl__ModOp(...) 		*/
-/*if the current state is saved, and you want to modify a modop ,
- * you need to fork the oplist until you reach modop, and set
- * the new forked oplist as new list, with unsaved state*/
-hlOp* hl_img_fork_saved_state(hlImg *img, unsigned int ref,int useindex){
-	hlOp *op = img->top;
-	hlOp *tmp = NULL;
-	hlOp *newtop = NULL;
-	assert(op);
-	newtop = hlDupOp(op);
-	if(	( useindex && newtop->index == ref) 
-		|| (!useindex && newtop->ref == ref)){
-		img->top = newtop;
-		img->state = HL_STATE_UNSAVED;
-		return newtop;
-	}else{
-		tmp = newtop;
-		op = newtop->down;
-		while(op){
-			op = hlDupOp(op);
-			tmp->down = op;
-			if(op->ref == ref){
-			if(	( useindex && op->index == ref) 
-				|| (!useindex && op->ref == ref)	){
-				img->top = newtop;
-				img->state = HL_STATE_UNSAVED;
-				return op;
-			}
-			else{
-				op = op->down;
-			}
-		}
-		printf("forked op not found in oplist, has forked anyway\n");
-		img->top = newtop;
-		img->state = HL_STATE_UNSAVED;
-		return NULL;
-	}
-}
-/* if the current state is unsaved, and you want to modify a modop, you
- * need to clean the cache of the higher op if they are unsaved(refcount == 0)
- * else, you need to fork them just as with saved state */
-hlOp * hl_img_fork_unsaved_state(hlImg *img, unsigned int ref, int useindex){
-	hlOp* u_op = img->top;
-	hlOp* u_op_p = NULL;
-	hlOp* s_op = NULL;
-	if (u_op->refcount > 0){
-		return hl_img_fork_saved_state(img,ref,useindex);
-		
-	}
-	while(u_op && u_op->refcount == 0){
-		hlOpCacheFree(u_op);
-		u_op_p = u_op;
-		u_op = u_op->down;
-		if(	( useindex && u_op->index == ref) 
-			|| (!useindex && u_op->ref == ref)	){
-			return u_op;
-		}
-	}
-	if(u_op){
-		s_op = hlDupOp(u_op);
-		u_op_p->down = s_op;
-	}
-	while(s_op){
-		if(	( useindex && s_op->index == ref) 
-			|| (!useindex && s_op->ref == ref)	){
-			return s_op;
-		}else if (s_op->down){
-			s_op = hlDupOp(s_op->down);
-		}else{
-			printf("forked op not found in oplist, has forked anyway\n");
-			return NULL;
-		}
-	}
-	printf("serious fuck up in oplist discovered while forking it\n");
-	return NULL;
-}
-hlOp* hlImgForkOp(hlImg *img, unsigned int ref, int useindex){
-	if(img->state == HL_STATE_UNSAVED){
-		return hl_img_fork_unsaved_state(img,ref,useindex);
-	}else{
-		return hl_img_fork_saved_state(img,ref,useindex);
-	}
-}
-
-		
-
-unsigned int hlImgPushNewModOp(hlImg *img, hlParam *p){
-	hlOp *op = hlNewOp(p);
-	op->modifiable = 1;
-	hlImgPushOp(img,op);
+hlOpRef lImgPushOp(hlImg *img, hlOp* op){
+	insert_op(NULL,op,img->top);
+	img->state  = HL_STATE_UNSAVED;
+	img->top    = op;
+	op->img = img;
 	return op->ref;
 }
-hlOp *hl_find_op(hlImg *img, unsigned int ref){ /*TODO make it faster than O(n)*/
+/**
+ * if the current state is unsaved, and you want to modify a modop, you
+ * need to clean the cache of the higher op if they are unsaved(refcount == 0)
+ * else, you need to fork them just as with saved state 
+ *
+ * returns the operation with op->ref == ref. img->top is the forked one,
+ * inconsistent caches are cleaned, and saved op are forked.
+ */
+static hlOp * hlImgForkOp(hlImg *img, hlOpRef ref){
+	hlOp* op = img->top;
+	hlOp* op_up = NULL;
+	while(op && op->refcount == 0){
+		hlOpCacheFree(op);
+		if( op->ref == ref){ 
+			return op;
+		}
+		op_up = op;
+		op = op->down;
+	}
+	while(op){
+		if(op == img->top){
+			op = hlDupOp(op);
+			img->top = op;
+		}else{
+			op = hlDupOp(op);
+			op_up->down = op;
+		}
+		if(op->ref == ref){
+			return op;
+		}
+		op_up = op;
+		op = op->down;
+	}
+	printf("WARNING: hlImgForkOp(...): ref not found, has forked anyway\n");
+	return NULL;
+}
+static hlOp *hl_find_op(hlImg *img, hlOpRef ref){ /*TODO make it faster than O(n)*/
 	hlOp* op = img->top;
 	while(op){
 		if (op->ref == ref){
@@ -418,37 +342,29 @@ hlOp *hl_find_op(hlImg *img, unsigned int ref){ /*TODO make it faster than O(n)*
 	}
 	return NULL;
 }
-hlParam * hlImgModOp(hlImg *img,unsigned int ref){
+hlParam * hlImgModOpBegin(hlImg *img,hlOpRef ref){
 	hlOp * op = hl_find_op(img,ref);
 	if(!op){
-		printf("cannot modify non existing op\n");
-		return NULL;
-	}else if(!op->modifiable){
-		printf("cannot modify non modifiable op\n");
+		printf("ERROR: hlImgModOpBegin(...) operation not found.\n");
 		return NULL;
 	}else{
-		op = hl_img_fork_state(img,ref);
+		op = hlImgForkOp(img,ref);
 		hlParamUnlock(op->param);
 		return op->param;
 	}
 }
-void hlImgEndModOp(hlImg *img,unsigned int ref){
+void hlImgModOpEnd(hlImg *img, hlOpRef ref){
 	hlOp *op = hl_find_op(img,ref);
 	if(!op){
-		printf("applying modifications on non existing op\n");
-		return;
-	}else if(!op->modifiable){
-		printf("applying modifications on non modifiable op\n");
+		printf("ERROR: hlImgModOpEnd(...) operation not found.\n");
 	}else{
 		hlParamLock(op->param);
-		hl_img_purge_cache(img,op);
 	}
-	return;
 }
 
 /* 	hlPrintImg(...) 	*/
 void hlPrintImg(hlImg *img, hlState state){
-	int i = hl_img_opcount(img,state);
+	int i = hlImgGetOpCount(img,state);
 	hlOp* tmp;
 	printf("<hlImg>\n");
 	if(img->state){
@@ -475,13 +391,13 @@ void hlPrintImg(hlImg *img, hlState state){
 }
 
 /* 	hlImgSize_(...)	/ hlImgTile_(...)	*/
-uint32_t hlImgSizeX(hlImg *img, uint32_t z){
+uint32_t hlImgSizeX(hlImg *img, unsigned int z){
 	return hlFrameSizeX(img->source,z);
 }
-uint32_t hlImgSizeY(hlImg *img, uint32_t z){
+uint32_t hlImgSizeY(hlImg *img, unsigned int z){
 	return hlFrameSizeY(img->source,z);
 }
-uint32_t hlImgTileX(hlImg *img, uint32_t z){
+uint32_t hlImgTileX(hlImg *img, unsigned int z){
 	return hlFrameTileX(img->source,z);
 }
 uint32_t hlImgTileY(hlImg *img, uint32_t z){
@@ -561,25 +477,27 @@ void  hlImgRenderToRaw(hlImg *img, hlRaw *raw, hlState state, int px, int py, un
 }
 
 /* 	OPERATIONS :	hl__Op(...) 	*/
+static hlOpRef hl_new_ref(void){
+	static hlOpRef ref = 0;
+	return ref++;
+}
 hlOp* hlNewOp(hlParam *p){
-	static unsigned int ref = 0;
 	hlImg*img;
 	hlState s;
 	hlOp* op = (hlOp*)malloc(sizeof(hlOp));
 	hl_debug_mem_alloc(HL_MEM_OPERATION);
-	op->param = p;
-	op->down = NULL;
-	op->id 	 = hlParamGetId(p);
-	op->ref = ref++;
-	op->modifiable = 0;
-	op->refcount = 0;
-	op->caching = 0;
-	op->cache = NULL;
-	op->index = 0;
+	op->param 	= p;
+	op->down 	= NULL;
+	op->id 	 	= hlParamGetId(p);
+	op->ref 	= hl_new_ref();
+	op->refcount 	= 0;
+	op->caching 	= 0;
+	op->cache 	= NULL;
 	assert(op_library[hlParamGetId(p)].id == op->id);
-	op->render = op_library[hlParamGetId(p)].render;
-	op->type = op_library[hlParamGetId(p)].type;
-	/*when creating a blending op that links against another image
+	op->render 	= op_library[hlParamGetId(p)].render;
+	op->type 	= op_library[hlParamGetId(p)].type;
+	/* TODO : THIS IS UGLY AS HELL.
+	 * when creating a blending op that links against another image
 	 * and state, we must duplicate the state, so that if the linked
 	 * state is removed elsewhere, we still have a valid reference */
 	if (op->type == HL_BLENDING){
@@ -593,18 +511,10 @@ hlOp* hlNewOp(hlParam *p){
 }
 hlOp* hlDupOp(hlOp* op){
 	hlOp* dup = hlNewOp(hlDupParam(op->param));
-	dup->img = op->img;
-	dup->down = op->down;
-	dup->modifiable = op->modifiable;
-	dup->index = op->index;
-	dup->refcount = 0;
-	dup->ref = op->ref;
-	dup->caching = op->caching;
-	dup->cache = NULL;
-	dup->render = op->render;
-	dup->type = op->type;
-	dup->id = op->id;
-	printf("dupOp\n");
+	memcpy(dup,op,sizeof(hlOp));
+	dup->refcount 	= 0;
+	dup->cache 	= NULL;
+	dup->caching 	= 0;
 	return dup;
 }
 void hlFreeOp(hlOp* op){
@@ -618,7 +528,6 @@ void hlFreeOp(hlOp* op){
 	if(op->cache){hlFreeFrame(op->cache);}
 	free(op);
 	hl_debug_mem_free(HL_MEM_OPERATION);
-	return;
 }
 void hlPrintOp(hlOp *op){
 	printf("<Op> \n   id:%d\n   type:%d\n",op->id,op->type);
@@ -627,12 +536,6 @@ void hlPrintOp(hlOp *op){
 	}
 	else{
 		printf("   caching: false\n");
-	}
-	if(op->modifiable){
-		printf("   modifiable: true\n");
-	}
-	else{
-		printf("   modifiable: false\n");
 	}
 	printf("   down:%p\n",(void*)op->down);
 	printf("   img:%p\n",(void*)op->img);
@@ -834,6 +737,58 @@ hlTile *hlOpRenderTile(hlOp* op, bool istop, int x, int y, unsigned int z){
 			return NULL;
 	}
 }
+
+int main(int argc, char**argv){
+ 	hlCS cs	    = hlNewCS(HL_8B,HL_RGB);	/*colorspace*/
+	hlRaw *in   = hlRawFromPng("girl_.png");
+	hlImg *img  = hlNewImgFromSource(hlFrameFromRaw(in));
+	hlColor c   = hlNewColor(cs,255.0,128.0,0.0,0.0,255.0);
+
+	/*we create a new operation drawing a orange rectangle */
+	hlParam *p = hlNewParam(HL_DRAW_RECT);
+		hlParamSetColor(p,c);
+		hlParamSetNum(p,100.0,120.0, 500.0,400.0, 0.8);
+	hlOpRef r = hlImgPushNewOp(img,p);
+	
+	hlState s1 = hlImgStateSave(img);
+	
+	/*we create a new operation drawing a purple rectangle */
+	p = hlNewParam(HL_DRAW_RECT);
+		hlParamSetColor(p,hlNewColor(cs,255.0,0.0,128.0,0.0,255.0));
+		hlParamSetNum(p,20.0,60.0, 200.0,300.0, 0.2);
+	hlImgPushNewOp(img,p);
+
+	/*we create a new operation drawing a green rectangle */
+	p = hlNewParam(HL_DRAW_RECT);
+		hlParamSetColor(p,hlNewColor(cs,20.0,255.0,0.0,0.0,255.0));
+		hlParamSetNum(p,400.0,20.0, 500.0,300.0, 0.5);
+	hlImgPushNewOp(img,p);
+
+	hlState s2 = hlImgStateSave(img);
+
+
+	hlRaw *out = hlNewRaw(cs,600,600);	/*an output buffer*/
+
+	hlImgRenderToRaw(img, out, s1, 0, 0, 0);
+	hlRawToPng( out, "blending-s1.png");
+
+	
+	hlImgRenderToRaw(img, out, s2, 0, 0, 0);
+	hlRawToPng( out, "blending-s2.png");
+	
+	/* We modify the orange rectangle to be drawn in red */
+	p = hlImgModOpBegin(img,r);
+		hlParamSetColor(p,hlNewColor(cs,255.0,0.0,0.0,0.0,255.0));
+	hlImgModOpEnd(img,r);
+
+	/* we render our modifications zoomed out and centered*/
+	hlImgRenderToRaw(img, out, HL_STATE_CURRENT, -200, -200, 2);
+	hlRawToPng( out, "blending-s3.png");
+
+	return 0;
+}
+
+	
 /*int main(int argc, char** argv){
 	hlCS cs     = hlNewCS(HL_8B,HL_RGB);
 	hlRaw *in   = hlRawFromPng("girl_.png");

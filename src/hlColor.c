@@ -60,10 +60,6 @@ void hlColorSetChan(hlColor* col, int channel, float value){
 			col->color[channel] = (uint8_t)value;
 			break;
 		}
-		case HL_16B : {
-			col16[channel] = (uint16_t)value;
-			break;
-		}
 		case HL_32B : {
 			col32f[channel] = value;
 			break;
@@ -74,12 +70,10 @@ void hlColorSetChan(hlColor* col, int channel, float value){
 
 /* 	hlColorGet___(...) 		*/
 float hlColorGetChan(const hlColor* col, int channel){
-	uint16_t* col16  = (uint16_t*)col->color;
 	float*    col32f = (float*)col->color;
 	assert( channel >= 0 && channel < hlCSGetChan(col->cs));
 	switch(hlCSGetBpc(col->cs)){
 		case HL_8B :	return (float)(col->color[channel]); 
-		case HL_16B : return (float)(col16[channel]);
 		case HL_32B : return col32f[channel];
 		default : { assert(0 && "wrong bpc"); return 42; }
 	}

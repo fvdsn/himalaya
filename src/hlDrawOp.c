@@ -5,13 +5,13 @@
 #include "hlBlendOp.h"
 
 
-float hl_scale_float(float dist, int tz){
+static float hl_scale_float(float dist, int tz){
 	while(tz--){
 		dist /= 2;
 	}
 	return dist;
 }
-void hl_draw_rect_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, int ty, unsigned int tz){
+static void hl_draw_rect_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, int ty, unsigned int tz){
 	uint8_t* data = HL_DATA_8B(a);
 	const uint8_t* color = hlColorGetData(c);
 	const int X = tx*HL_TILEWIDTH;
@@ -44,7 +44,7 @@ void hl_draw_rect_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, int ty, 
 		}
 	}
 }
-void hl_draw_circle_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, int ty, unsigned int tz){
+static void hl_draw_circle_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, int ty, unsigned int tz){
 	uint8_t* data = HL_DATA_8B(a);
 	const uint8_t* color = hlColorGetData(c);
 	int X = tx*HL_TILEWIDTH;
@@ -90,7 +90,7 @@ void hl_draw_circle_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, int ty
 	}
 }
 
-void hl_draw_8b(hlTile *a, int id, hlColor *c, int chan, float *num, int tx, int ty, unsigned int tz){
+static void hl_draw_8b(hlTile *a, int id, hlColor *c, int chan, float *num, int tx, int ty, unsigned int tz){
 	switch(id){
 		case HL_DRAW_RECT:
 		hl_draw_rect_8b(a,c,chan,num,tx,ty,tz);

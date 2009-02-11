@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 env = Environment(	CC = 'gcc', 
-			CCFLAGS = '-g -Wall -Wextra `pkg-config clutter-0.8 --cflags`',
+			CCFLAGS = '-g -Wall -Wextra -Wno-unused-parameter `pkg-config clutter-0.8 --cflags`',
 			LINKFLAGS = '`pkg-config clutter-0.8 --libs`',
 			LIBS = ['IL','ILU','m'], 
 			LIBPATH = '.' )
@@ -20,8 +20,7 @@ env.Program(	'a.bin',
 			'hlBlendOp.c',
 			'hlDrawOp.c',
 			'hlUndo.c',
-			'hlDebug.c',
-			'uiMain.c'])
+			'hlDebug.c'])
 
 
 #Scons examples in case you need it...

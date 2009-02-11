@@ -25,13 +25,6 @@ enum hl_tilesize_8b { /*numbers based on tilewidth = 32 */
 	HL_TILEWIDTH_8B4 = 4096,
 	HL_TILEWIDTH_8B5 = 5120
 };
-enum hl_tilesize_16b {
-	HL_TILEWIDTH_16B1 = 2048,
-	HL_TILEWIDTH_16B2 = 4096,
-	HL_TILEWIDTH_16B3 = 6144,
-	HL_TILEWIDTH_16B4 = 8192,
-	HL_TILEWIDTH_16B5 = 10240
-};
 enum hl_tilesize_32b {
 	HL_TILEWIDTH_32B1 = 4096,
 	HL_TILEWIDTH_32B2 = 8192,
@@ -43,7 +36,6 @@ enum hl_tilesize_32b {
 #define HL_TILEWIDTH    32
 #define HL_TILE_PIXCOUNT HL_TILEWIDTH*HL_TILEWIDTH
 #define HL_DATA_8B(tile) ((uint8_t*)(tile->data))
-#define HL_DATA_16B(tile) ((uint16_t*)(tile->data))
 #define HL_DATA_32B(tile) ((float*)(tile->data))
 #define HL_XY(x,y,chan) ((HL_TILEWIDTH*(y)+(x))*(chan))
 #define HL_XYC(x,y,chan) (HL_XY(x,y,chan) + (chan))

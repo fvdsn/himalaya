@@ -16,9 +16,8 @@ typedef struct hl_cs{
 
 typedef enum hl_bpc{
 	HL_8B  = 0,
-	HL_16B = 1,
-	HL_32B = 2
-} HLBPC;
+	HL_32B = 1
+}hlBpc;
 
 typedef enum hl_space{
 	HL_RAW,
@@ -30,19 +29,19 @@ typedef enum hl_space{
 	HL_LAB,
 	HL_XYZ,
 	HL_LUV  
-} HLSPACE;
+}hlSpace;
 
-hlCS hlNewCS(HLBPC bitperchannel, HLSPACE space);                
+hlCS hlNewCS(hlBpc bitperchannel, hlSpace space);                
 hlCS hlCSCopy(hlCS colorspace);
 
-HLBPC    hlCSGetBpc(hlCS colorspace);
-HLSPACE  hlCSGetSpace(hlCS colorspace);
+hlBpc    hlCSGetBpc(hlCS colorspace);
+hlSpace  hlCSGetSpace(hlCS colorspace);
 int      hlCSGetChan(hlCS colorspace);
 int      hlCSGetBpp(hlCS colorspace); /* returns bytes per pixel */
 int 	 hlCSEqual(hlCS a, hlCS b);
 
-void hlCSSetBpc(hlCS* colorspace, HLBPC bitperchannel);
-void hlCSSetSpace(hlCS* colorspace, HLSPACE space);
+void hlCSSetBpc(hlCS* colorspace, hlBpc bitperchannel);
+void hlCSSetSpace(hlCS* colorspace, hlSpace space);
 void hlCSSetChan(hlCS* colorspace, int channels);
 
 void hlPrintCS(hlCS colorspace);

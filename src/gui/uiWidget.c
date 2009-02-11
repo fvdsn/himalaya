@@ -1,0 +1,266 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <SDL/SDL.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <cairo.h>
+#include "uiCore.h"
+#include "uiWidget.h"
+
+static void uiRectDraw(float x, float y, float z,float sx, float sy){
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0,sy);
+		glVertex3f(x,		y,		z);
+		glTexCoord2f(sx,sy);
+		glVertex3f(x+sx,	y,		z);
+		glTexCoord2f(sx,0.0);
+		glVertex3f(x+sx,	y+sy,		z);
+		glTexCoord2f(0.0,0.0);
+		glVertex3f(x,		y+sy,		z);
+	glEnd();
+}
+static void uiTextureDraw(uiEntity *self){
+	float x = uiEntityGetPosX(self) + self->tex_posx;
+	float y = uiEntityGetPosY(self) + self->tex_posy;
+	float z = uiEntityGetPosZ(self) + 0.1;
+	float sx = self->tex_sizex;
+	float sy = self->tex_sizey;
+	if(!self->tex){
+		return;
+	}
+	glEnable(GL_TEXTURE_RECTANGLE_ARB);
+	glTexImage2D(	GL_TEXTURE_RECTANGLE_ARB,
+			0,
+			GL_RGBA,
+			self->tex_sizex,
+			self->tex_sizey,
+			0,
+			GL_BGRA,
+			GL_UNSIGNED_BYTE,
+			self->tex );
+	uiRectDraw(x,y,z,sx,sy);
+	glDisable(GL_TEXTURE_RECTANGLE_ARB);
+}
+static void uiButtonDraw(uiEntity *self){
+	cairo_surface_t *surface;
+	cairo_t *cr;
+
+	float *color = uiWindowGetColor(UI_ITEM_COLOR,UI_NORMAL_COLOR);
+	float x = uiEntityGetPosX(self);
+	float y = uiEntityGetPosY(self);
+	float z = uiEntityGetPosZ(self);
+	glDisable(GL_TEXTURE_RECTANGLE_ARB);
+	glColor4f(0,0,0,0.2);
+	uiRectDraw(x+3,y-3,z-0.1,self->sizex,self->sizey);
+	if(self->mouseover){
+		glColor4f(1,0.2,0,1);
+	}else{
+		glColor4f(color[0],color[1],color[2],color[3]);
+	}
+	uiRectDraw(x,y,z,self->sizex,self->sizey);
+	if(!self->tex){
+		printf("rendering texture\n");
+		self->tex = malloc(self->tex_sizex*self->tex_sizey*4);
+		surface = cairo_image_surface_create_for_data((unsigned char*)self->tex,
+				CAIRO_FORMAT_ARGB32,
+				self->tex_sizex,
+				self->tex_sizey,
+				4*self->tex_sizex);
+		cr = cairo_create(surface);
+		cairo_select_font_face(cr,"sans",CAIRO_FONT_SLANT_NORMAL,
+						CAIRO_FONT_WEIGHT_NORMAL);
+		cairo_set_font_size(cr,10.0);
+		cairo_set_source_rgb(cr,0,0,0);
+		cairo_move_to(cr,5,11);
+		cairo_show_text(cr,self->name);
+		cairo_destroy(cr);
+		cairo_surface_finish(surface);
+	}
+	uiTextureDraw(self);
+}
+static int uiButtonClick(uiEntity *self,int button, int down, float x, float y, float pressure){
+	uiButtonData *bd = (uiButtonData*)self->data;
+	printf("click!:%s\tbutton:%d\tdown:%d\n",self->name,button,down);
+	if(bd->click && button == 0 && down == UI_KEY_UP){
+		bd->click(self,bd->id);
+	}
+	return 0;
+}
+uiEntity *uiButtonNew(char *name,
+		uiEntity *parent, 
+		int id,
+		void(*click)(uiEntity *self, int id)){
+	uiButtonData *bd = (uiButtonData*)malloc(sizeof(uiButtonData));
+	uiEntity *b = uiEntityNew(name,UI_ENT_BUTTON,parent);
+	uiEntitySetSize(b,60,16);
+	bd->id = id;
+	bd->click = click;
+	b->data = bd;
+	b->draw = uiButtonDraw;
+	b->click = uiButtonClick;
+	b->tex_posx = 0;
+	b->tex_posy = 0;
+	b->tex_sizex = b->sizex;
+	b->tex_sizey = b->sizey;
+	return b;
+}
+static void uiPanelDraw(uiEntity *self){
+	float *color = uiWindowGetColor(UI_PANEL_COLOR,UI_NORMAL_COLOR);
+	float x = uiEntityGetPosX(self);
+	float y = uiEntityGetPosY(self);
+	float z = uiEntityGetPosZ(self);
+	glDisable(GL_TEXTURE_RECTANGLE_ARB);
+	glColor4f(0,0,0,0.3);
+	uiRectDraw(x+3,y-3,z-0.1,self->sizex,self->sizey);
+	glColor4f(color[0],color[1],color[2],color[3]);
+	uiRectDraw(x,y,z,self->sizex,self->sizey);
+}
+static int uiPanelMotion(uiEntity *self,float x, float y, float p){
+	float dx,dy;
+	if(uiStateMouse(0)){
+		uiStateMouseDelta(&dx,&dy,NULL);
+		self->posx += dx;
+		self->posy += dy;
+	}
+	return 0;
+}
+uiEntity *uiPanelNew(char *name, uiEntity *parent){
+	uiEntity *p = uiEntityNew(name,UI_ENT_PANEL,parent);
+	uiEntitySetSize(p,150,120);
+	p->draw = uiPanelDraw;
+	p->motion = uiPanelMotion;
+	return p;
+}
+static int uiSliderMotion(uiEntity *self,float x, float y, float p){
+	float dx,v;
+	uiSliderData *sd = (uiSliderData*)self->data;
+	if(uiStateMouse(UI_MOUSE_BUTTON_1)){
+		uiStateMouseDelta(&dx,NULL,NULL);
+		v = sd->value + dx*sd->update_speed;
+		if(v > sd->max_value){
+			sd->value = sd->max_value;
+		}else if (v < sd->min_value){
+			sd->value = sd->min_value;
+		}else{
+			sd->value = v;
+		}
+		if(dx != 0.0){
+			if (sd->slide){
+				sd->slide(self,v,sd->id);
+			}else if(sd->dest_value){
+				*(sd->dest_value) = v;
+			}
+		}
+	}
+	return 0;
+}
+static void uiSliderDraw(uiEntity *self){
+	cairo_surface_t *surface;
+	cairo_t *cr;
+	float *color = uiWindowGetColor(UI_ITEM_COLOR,UI_NORMAL_COLOR);
+	float bgcol[4] = {0.0,0.0,0.0,0.2};
+	float barcol[4] = {0.3,0.3,0.3,1.0};
+	float active[4] = {1.0,0.2,0,1.0};
+	float x = uiEntityGetPosX(self);
+	float y = uiEntityGetPosY(self);
+	float z = uiEntityGetPosZ(self);
+	float margin = 3.0;
+
+	uiSliderData *sd = (uiSliderData*)self->data;
+	glDisable(GL_TEXTURE_RECTANGLE_ARB);
+	glColor4f(0,0,0,0.2);
+	uiRectDraw(x+3,y-3,z-0.1,self->sizex,self->sizey);
+	glColor4f(color[0],color[1],color[2],color[3]);
+	uiRectDraw(x,y,z,self->sizex,self->sizey);
+	glColor4f(bgcol[0],bgcol[1],bgcol[2],bgcol[3]);
+	uiRectDraw(	x + margin, y + margin,z,
+			self->sizex - 2*margin ,
+			self->sizey - 2*margin	);
+	if(self->mouseover){
+		glColor4f(active[0],active[1],active[2],active[3]);
+	}else{
+		glColor4f(barcol[0],barcol[1],barcol[2],barcol[3]);
+	}
+	uiRectDraw(	x + margin, y + margin,z,
+			(self->sizex - 2*margin)
+				*(sd->value/(sd->max_value-sd->min_value)) ,
+			self->sizey - 2*margin	);
+
+	if(!self->tex){
+		printf("rendering texture\n");
+		self->tex = malloc(self->tex_sizex*self->tex_sizey*4);
+		memset(self->tex,0,self->tex_sizex*self->tex_sizey*4);
+		surface = cairo_image_surface_create_for_data((unsigned char*)self->tex,
+				CAIRO_FORMAT_ARGB32,
+				self->tex_sizex,
+				self->tex_sizey,
+				4*self->tex_sizex);
+		cr = cairo_create(surface);
+		cairo_select_font_face(cr,"sans",CAIRO_FONT_SLANT_NORMAL,
+						CAIRO_FONT_WEIGHT_NORMAL);
+		cairo_set_font_size(cr,10.0);
+		cairo_set_source_rgba(cr,0.0,0.0,0.0,1.0);
+		cairo_move_to(cr,5,11);
+		cairo_show_text(cr,self->name);
+		cairo_destroy(cr);
+		cairo_surface_finish(surface);
+	}
+	uiTextureDraw(self);
+}
+
+uiEntity *uiSliderNew(char *name,
+		uiEntity *parent, 
+		int id,
+		float min_value,
+		float max_value,
+		float update_speed,
+		float *dest_value,
+		void(*slide)(uiEntity *self, float value, int id)){
+	uiSliderData *sd = (uiSliderData*)malloc(sizeof(uiSliderData));
+	uiEntity *b = uiEntityNew(name,UI_ENT_SLIDER,parent);
+	uiEntitySetSize(b,60,16);
+	sd->id = id;
+	sd->slide = slide;
+	sd->min_value = min_value;
+	sd->max_value = max_value;
+	sd->update_speed = update_speed;
+	sd->dest_value = dest_value;
+	if(dest_value){
+		sd->value = *dest_value;
+	}else{
+		sd->value = ( max_value + min_value ) / 2.0;
+	}
+	b->data = sd;
+	b->draw = uiSliderDraw;
+	b->motion = uiSliderMotion;
+	b->tex_posx = 0;
+	b->tex_posy = 0;
+	b->tex_sizex = b->sizex;
+	b->tex_sizey = b->sizey;
+	return b;
+}
+static void uiColorDraw(uiEntity *self){
+	float *color = (float*)self->data;
+	float x = uiEntityGetPosX(self);
+	float y = uiEntityGetPosY(self);
+	float z = uiEntityGetPosZ(self);
+	glDisable(GL_TEXTURE_RECTANGLE_ARB);
+	glColor4f(color[0],color[1],color[2],color[3]);
+	uiRectDraw(x,y,z,self->sizex/2,self->sizey/2);
+	uiRectDraw(	x+self->sizex/2, y+self->sizey/2,z,
+			self->sizex/2,	self->sizey/2);
+	glColor4f(color[0],color[1],color[2],1.0);
+	uiRectDraw(x+self->sizex/2,y,z,self->sizex/2,self->sizey/2);
+	uiRectDraw(x,y+self->sizey/2,z,self->sizex/2,self->sizey/2);
+}
+
+uiEntity *uiColorNew(char *name, uiEntity *parent,float *color){
+	uiEntity *c = uiEntityNew(name,UI_ENT_COLOR,parent);
+	uiEntitySetSize(c,32,32);
+	c->data = color;
+	c->draw = uiColorDraw;
+	return c;
+}
+
+
+

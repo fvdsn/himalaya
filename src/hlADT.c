@@ -5,7 +5,7 @@
 #include "hlDebug.h"
 
 
-unsigned int hash(unsigned int size, unsigned int key){
+static unsigned int hash(unsigned int size, unsigned int key){
 	return key % size;
 }
 hlHash *hlNewHash(unsigned int size){
@@ -37,7 +37,7 @@ void *hlHashGet(hlHash *h, unsigned int key){
 	}
 	return NULL;
 }
-int hl_add_node(hlHNode **dst, hlHNode *src){
+static int hl_add_node(hlHNode **dst, hlHNode *src){
 	hlHNode *tmp;
 	if ( *dst == NULL){
 		*dst = src;

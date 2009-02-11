@@ -3,14 +3,15 @@
 
 #include "hlTile.h"
 typedef int hlState;
+typedef int hlOpRef;
 typedef struct hl_img hlImg;
 typedef struct hl_param hlParam;
 typedef struct hl_op hlOp;
 typedef struct hl_op_class{
-	unsigned int id;
-	unsigned int type;
-	unsigned int numc;
-	unsigned int colorc;
+	int id;
+	int type;
+	int numc;
+	int colorc;
 	void (*render)(hlTile *tile, hlParam *p);
 }hlOpClass;
 
