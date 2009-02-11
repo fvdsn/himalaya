@@ -52,7 +52,6 @@ hlColor hlNewColor(	hlCS cs,
 
 /*	hlColorSet___(...) 		*/
 void hlColorSetChan(hlColor* col, int channel, float value){
-	uint16_t* col16  = (uint16_t*)col->color;
 	float*    col32f = (float*)col->color;
 	assert( channel >=0 && channel < hlCSGetChan(col->cs));
 	switch(hlCSGetBpc(col->cs)){

@@ -740,7 +740,7 @@ hlTile *hlOpRenderTile(hlOp* op, bool istop, int x, int y, unsigned int z){
 
 int main(int argc, char**argv){
  	hlCS cs	    = hlNewCS(HL_8B,HL_RGB);	/*colorspace*/
-	hlRaw *in   = hlRawFromPng("girl_.png");
+	hlRaw *in   = hlRawFromPng("images/girl_.png");
 	hlImg *img  = hlNewImgFromSource(hlFrameFromRaw(in));
 	hlColor c   = hlNewColor(cs,255.0,128.0,0.0,0.0,255.0);
 
@@ -770,11 +770,11 @@ int main(int argc, char**argv){
 	hlRaw *out = hlNewRaw(cs,600,600);	/*an output buffer*/
 
 	hlImgRenderToRaw(img, out, s1, 0, 0, 0);
-	hlRawToPng( out, "blending-s1.png");
+	hlRawToPng( out, "images/blending-s1.png");
 
 	
 	hlImgRenderToRaw(img, out, s2, 0, 0, 0);
-	hlRawToPng( out, "blending-s2.png");
+	hlRawToPng( out, "images/blending-s2.png");
 	
 	/* We modify the orange rectangle to be drawn in red */
 	p = hlImgModOpBegin(img,r);
@@ -783,7 +783,7 @@ int main(int argc, char**argv){
 
 	/* we render our modifications zoomed out and centered*/
 	hlImgRenderToRaw(img, out, HL_STATE_CURRENT, -200, -200, 2);
-	hlRawToPng( out, "blending-s3.png");
+	hlRawToPng( out, "images/blending-s3.png");
 
 	return 0;
 }

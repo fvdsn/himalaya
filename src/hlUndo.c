@@ -56,7 +56,7 @@ hlState hlUndoPush(hlUndo *u){
 }		
 hlState hlUndoUndo(hlUndo *u){
 	printf("undo: UNDO \n");
-	if(hlImgStateGet == HL_STATE_UNSAVED){
+	if(hlImgStateGet(u->img) == HL_STATE_UNSAVED){
 		printf("\tstate unsaved\n");
 		hlImgStateLoad(u->img,u->undostate[u->currentlevel]);
 		printf("\tcurr.lvl:%d, level:%d\n",u->currentlevel,u->level);

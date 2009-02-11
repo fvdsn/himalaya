@@ -406,15 +406,16 @@ void hlFrameTileFree(hlFrame *f, int x, int y, unsigned int z){
 		hlFreeTile(t);
 	}
 }
-static void hl_print_path( uint32_t* pathx, uint32_t* pathy, int n){
+/*static void hl_print_path( uint32_t* pathx, uint32_t* pathy, int n){
 	int i = 0;
 	while(i < n+1){
 		printf("%d,%d\n",pathx[i], pathy[i]);
 		i++;
 	}
-}
+}*/
 
 /* 	hlRawFromFrame(...) 	*/
+/*
 static hlTile *hl_black_rgba_tile(){
 	hlCS cs = hlNewCS(HL_8B,HL_RGB);
 	hlColor c = hlNewColor(cs,0,0,0,0,255);
@@ -428,7 +429,7 @@ static hlTile *hl_white_rgba_tile(){
 	hlTile *t = hlNewTile(cs);
 	hlTileFill(t,&c);
 	return t;
-}
+}*/
 void hlRegionToRaw(hlFrame *f,hlRaw *raw,int px, int py,unsigned int z){
 	hlRegion r = hlNewRegion(px,py,hlRawSizeX(raw),hlRawSizeY(raw),z);
 	const int bpp = hlCSGetBpp(hlFrameCS(f));
