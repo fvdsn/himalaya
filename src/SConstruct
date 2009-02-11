@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 env = Environment(	CC = 'gcc', 
-			CCFLAGS = '-g -Wall -Wextra -Wno-unused-parameter `pkg-config clutter-0.8 --cflags`',
-			LINKFLAGS = '`pkg-config clutter-0.8 --libs`',
+			CCFLAGS = '-g -Wall -Wextra -Wno-unused-parameter ',
+			LINKFLAGS = ' ',
 			LIBS = ['IL','ILU','m'], 
 			LIBPATH = '.' )
 env.Program(	'a.bin', 
