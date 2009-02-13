@@ -69,19 +69,20 @@ int	hlOpArgByName(const hlOp*op,const char *argname){
 	}
 	return -1;
 }
-float hlOpArgValue(hlOp*op, int arg, int index){
+
+float hlOpGetValue(hlOp*op, int arg, int index){
 	if(hlOpArgType(op,arg) == HL_ARG_NUM){
 		if(index < 0 || index >= hlOpArgSize(op,arg)){
-			printf("WARNING : hlOpArgValue(...) index out of bounds \n");
+			printf("ERROR : hlOpGetValue(...) index out of bounds \n");
 			index = 0;
 		}
 		return hlParamGetNum(op->param)[hl_op_get_arg(op,arg)->index];
 	}else{
-		printf("ERROR: hlOpArgValue(...) : arg is not numerical, returning 0.0\n");
+		printf("ERROR: hlOpGetValue(...) : arg is not numerical, returning 0.0\n");
 		return 0.0;
 	}
 }
-float hlOpArgColor(hlOp*op, int arg, int index){
+float hlOpGetColor(hlOp*op, int arg, int index){
 	if(hlOpArgType(op,arg) == HL_ARG_COLOR){
 		if(index < 0 || index >= hlOpArgSize(op,arg)){
 			printf("WARNING : hlOpArgColor(...) index out of bounds \n");
@@ -93,11 +94,48 @@ float hlOpArgColor(hlOp*op, int arg, int index){
 		return hlNewColor(hlNewCS(HL_8B,HL_RGB),0.0,0.0,0.0,0.0,255.0);
 	}
 }
-hlImg*	hlOpArgImg(const hlOp*op, int arg, int index){
+hlImg*	hlOpGetImg(const hlOp*op, int arg, int index){
 	return NULL	/* TODO */
 }
-hlState hlOpArgState(const hlOp*op, int arg, int index){
+hlState hlOpGetState(const hlOp*op, int arg, int index){
 	return 0;	/* TODO */
+}
+
+void	hlOpSetValue(const hlOp*op, int arg, int index, float value){
+	if(	hlOpArgType(op,arg) == HL_ARG_NUM 
+		&& index >= 0 
+		&& index < hlOpArgSize(op,arg)){
+		hlParamSetNum(	op->param,
+				hl_op_get_arg(op,arg)->index + index ,
+				value	);	/*TODO */
+	}else{
+		printf("ERROR : hlOpSetValue(...) arg is not numerical, value not set\n");
+	}
+}
+void	hlOpSetAllValue(const hlOp*op, int arg, int index, ... ){
+}
+void	hlOpSetColor(const hlOp*op, int arg, int index, hlColor col){
+	if(	hlOpArgType(op,arg) == HL_ARG_COLOR 
+		&& index >= 0 
+		&& index < hlOpArgSize(op,arg)){
+		hlParamSetColor( op->param,
+				 hl_op_get_arg(op,arg)->index + index ,
+				 col	);	/*TODO */
+	}else{
+		printf("ERROR : hlOpSetColor(...) arg is a color, color not set\n");
+	}
+}
+void	hlOpSetImg(const hlOp*op, int arg, int index, hlImg *img, hlState s){
+	if(	hlOpArgType(op,arg) == HL_ARG_IMG 
+		&& index >= 0 
+		&& index < hlOpArgSize(op,arg)){
+		hlParamSetImg(	op->param,
+				hl_op_get_arg(op,arg)->index + index ,
+				img,
+				state	);	/*TODO */
+	}else{
+		printf("ERROR : hlOpSetImg(...) arg is not an image, image not set\n");
+	}
 }
 hlOpClass *hlNewOpClass(const char *name,
 			const char *desc,
