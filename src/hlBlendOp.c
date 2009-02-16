@@ -172,8 +172,8 @@ static void hl_blend_32b(hlTile*a, const hlTile*b, int id, int chan, float *num)
 void hlBlendOp(hlTile *a,const hlTile *b, hlOp *op){
 	int id = hlOpGetId(op);
 	int chan = hlCSGetChan(hlOpGetCSIn(op));
-	float *num = hlParamGetNum(p);
-	switch(hlCSGetBpc(hlParamGetCSIn(op))){
+	float *num = hlOpGetAllValue(op);
+	switch(hlCSGetBpc(hlOpGetCSIn(op))){
 		case HL_8B:
 			hl_blend_8b(a,b,id,chan,num);
 			break;

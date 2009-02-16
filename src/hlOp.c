@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -18,7 +19,7 @@ struct hl_op_class{
 	int argc;
 	hlArg * arg;
 
-	void (*render)(hlTile *tile, hlParam *p);
+	void (*render)(hlTile *tile, hlOp *p);
 };
 
 struct hl_arg{
@@ -129,6 +130,15 @@ void hlPrintOp(hlOp *op){
 	printf("</Op>\n");
 	return;
 }
+void hlOpLock(hlOp *op){
+	op->locked = 1;
+}
+void hlOpUnlock(hlOp *op){
+	op->locked = 0;
+}
+int hlOpLocked(hlOp *op){
+	return op->locked;
+}
 
 /* 	hlOpCache___(...) 		*/
 void hlOpCacheEnable(hlOp *op, int enabled){
@@ -145,9 +155,9 @@ hlTile *hlOpCacheRemove(hlOp* op, int x, int y, unsigned int z){
 		return NULL;
 	}
 }
-void hlOpCacheSet(hlOp* op, hlTile*tile, int sx, int sy, int tx, int ty, unsigned int tz){
+void hlOpCacheSet(hlOp* op, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty, unsigned int tz){
 	if(!op->cache){
-		op->cache = hlNewFrame(	hlFrameColor(op->img->source),sx,sy);
+		op->cache = hlNewFrame(	hlNewColor(cs,0,0,0,0,0),sx,sy);
 	}
 	hlFrameTileSet(op->cache,tile,tx,ty,tz);
 	return;
@@ -205,6 +215,9 @@ int	hlOpArgByName(const hlOp*op,const char *argname){
 	return -1;
 }
 
+int	hlOpGetId(const hlOp *op){
+	return op->id;
+}
 float hlOpGetValue(const hlOp*op, int arg, int index){
 	if(hlOpArgType(op,arg) == HL_ARG_NUM){
 		if(index < 0 || index >= hlOpArgSize(op,arg)){
@@ -216,6 +229,9 @@ float hlOpGetValue(const hlOp*op, int arg, int index){
 		printf("ERROR: hlOpGetValue(...) : arg is not numerical, returning 0.0\n");
 		return 0.0;
 	}
+}
+float *hlOpGetAllValue(const hlOp *op){
+	return op->p_num;
 }
 hlColor hlOpGetColor(const hlOp*op, int arg, int index){
 	if(hlOpArgType(op,arg) == HL_ARG_COLOR){
@@ -229,6 +245,9 @@ hlColor hlOpGetColor(const hlOp*op, int arg, int index){
 		return hlNewColor(hlNewCS(HL_8B,HL_RGB),0.0,0.0,0.0,0.0,255.0);
 	}
 }
+hlColor *hlOpGetAllColor(const hlOp *op){
+	return op->p_color;
+}
 hlImg*	hlOpGetImg(const hlOp*op, int arg, int index){
 	if(hlOpArgType(op,arg) == HL_ARG_IMG){
 		if(index < 0 || index >= hlOpArgSize(op,arg)){
@@ -240,6 +259,9 @@ hlImg*	hlOpGetImg(const hlOp*op, int arg, int index){
 		printf("ERROR: hlOpGetImg(...) : arg is not an img, returning NULL\n");
 		return NULL;	
 	}
+}
+hlImg** hlOpGetAllImg(const hlOp *op){
+	return op->p_img;
 }
 hlState hlOpGetState(const hlOp*op, int arg, int index){
 	if(hlOpArgType(op,arg) == HL_ARG_IMG){
@@ -253,7 +275,16 @@ hlState hlOpGetState(const hlOp*op, int arg, int index){
 		return 0;	
 	}
 }
-void	hlOpSetValue(const hlOp*op, int arg, int index, float value){
+hlState *hlOpGetAllState(const hlOp *op){
+	return op->p_state;
+}
+hlCS	hlOpGetCSIn(const hlOp *op){
+	return op->cs_in;
+}
+hlCS	hlOpGetCSOut(const hlOp *op){
+	return op->cs_out;
+}
+void	hlOpSetValue(hlOp*op, int arg, int index, float value){
 	if(	hlOpArgType(op,arg) == HL_ARG_NUM 
 		&& index >= 0 
 		&& index < hlOpArgSize(op,arg)){
@@ -262,7 +293,7 @@ void	hlOpSetValue(const hlOp*op, int arg, int index, float value){
 		printf("ERROR : hlOpSetValue(...) arg is not numerical, value not set\n");
 	}
 }
-void	hlOpSetAllValue(const hlOp*op, const char *argname, ... ){
+void	hlOpSetAllValue(hlOp*op, const char *argname, ... ){
 	va_list ap;
 	int arg = hlOpArgByName(op,argname);
 	int index = hlOpArgSize(op,arg);
@@ -274,7 +305,7 @@ void	hlOpSetAllValue(const hlOp*op, const char *argname, ... ){
 	}
 	va_end(ap);
 }
-void	hlOpSetColor(const hlOp*op, int arg, int index, hlColor col){
+void	hlOpSetColor(hlOp*op, int arg, int index, hlColor col){
 	if(	hlOpArgType(op,arg) == HL_ARG_COLOR 
 		&& index >= 0 
 		&& index < hlOpArgSize(op,arg)){
@@ -283,7 +314,7 @@ void	hlOpSetColor(const hlOp*op, int arg, int index, hlColor col){
 		printf("ERROR : hlOpSetColor(...) arg is a color, color not set\n");
 	}
 }
-void	hlOpSetAllColor(const hlOp*op, const char *argname, ... ){
+void	hlOpSetAllColor(hlOp*op, const char *argname, ... ){
 	va_list ap;
 	int arg = hlOpArgByName(op,argname);
 	int index = hlOpArgSize(op,arg);
@@ -295,7 +326,7 @@ void	hlOpSetAllColor(const hlOp*op, const char *argname, ... ){
 	}
 	va_end(ap);
 }
-void	hlOpSetImg(const hlOp*op, int arg, int index, hlImg *img, hlState s){
+void	hlOpSetImg(hlOp*op, int arg, int index, hlImg *img, hlState s){
 	if(	hlOpArgType(op,arg) == HL_ARG_IMG 
 		&& index >= 0 
 		&& index < hlOpArgSize(op,arg)){
@@ -305,7 +336,7 @@ void	hlOpSetImg(const hlOp*op, int arg, int index, hlImg *img, hlState s){
 		printf("ERROR : hlOpSetImg(...) arg is not an image, image not set\n");
 	}
 }
-void	hlOpSetAllImg(const hlOp*op, const char *argname, ... ){
+void	hlOpSetAllImg(hlOp*op, const char *argname, ... ){
 	va_list ap;
 	int arg = hlOpArgByName(op,argname);
 	int index = hlOpArgSize(op,arg);
@@ -317,6 +348,12 @@ void	hlOpSetAllImg(const hlOp*op, const char *argname, ... ){
 	}
 	va_end(ap);
 }
+void	hlOpSetCSIn(hlOp*op, hlCS cs){
+	op->cs_in = cs;
+}
+void	hlOpSetCSOut(hlOp*op, hlCS cs){
+	op->cs_out = cs;
+}
 
 /*------------- OPERATION CLASS ---------- */
 
@@ -324,7 +361,7 @@ hlOpClass *hlNewOpClass(const char *name,
 			const char *desc,
 			int id, 
 			int type, 
-			void (*render)(hlTile *tile, hlParam *p) ){
+			void (*render)(hlTile *tile, hlOp *p) ){
 	hlOpClass * c = op_library + id;
 	if(c->id){
 		printf("ERROR : hlNewOpClass : redefining existing class : %d, was %d \n",id,c->id);

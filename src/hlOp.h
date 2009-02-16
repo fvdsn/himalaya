@@ -79,8 +79,9 @@ hlOp* 	hlNewOp(int id);
 hlOp* 	hlDupOp(hlOp *p);
 void 	hlFreeOp(hlOp* op);	/*TODO referenced states ... */
 void 	hlPrintOp(hlOp *op);
-void	hlLockOp(hlOp  *op);	/*TODO*/
-void	hlUnlockOp(hlOp *op);
+void	hlOpLock(hlOp  *op);	/*TODO*/
+void	hlOpUnlock(hlOp *op);
+int	hlOpLocked(hlOp *op);
 
 /*------------- OPERATION ARGUMENTS ---------- */
 
@@ -196,14 +197,14 @@ hlCS 	hlOpGetCSIn(const hlOp*op);
 hlCS 	hlOpGetCSOut(const hlOp*op);
 int	hlOpGetId(const hlOp*op);
 
-void	hlOpSetValue(const hlOp*op, int arg, int index, float value);
-void	hlOpSetAllValue(const hlOp*op, const char *argname, ... );
-void	hlOpSetColor(const hlOp*op, int arg, int index, hlColor col);
-void	hlOpSetAllColor(const hlOp*op, const char *argname, ... );
-void	hlOpSetImg(const hlOp*op, int arg, int index, hlImg *img, hlState s);
-void	hlOpSetAllImg(const hlOp*op, const char *argname, ... );
-void	hlOpSetCSIn(const hlOp*op, hlCS cs);
-void	hlOpSetCSOut(const hlOp*op, hlCS cs);
+void	hlOpSetValue(hlOp*op, int arg, int index, float value);
+void	hlOpSetAllValue(hlOp*op, const char *argname, ... );
+void	hlOpSetColor(hlOp*op, int arg, int index, hlColor col);
+void	hlOpSetAllColor(hlOp*op, const char *argname, ... );
+void	hlOpSetImg(hlOp*op, int arg, int index, hlImg *img, hlState s);
+void	hlOpSetAllImg(hlOp*op, const char *argname, ... );
+void	hlOpSetCSIn(hlOp*op, hlCS cs);
+void	hlOpSetCSOut(hlOp*op, hlCS cs);
 
 /*------------- OPERATION CLASS -------------*/
 
@@ -211,7 +212,7 @@ hlOpClass *hlNewOpClass(const char *name,
 			const char *desc,
 			int id, 
 			int type, 
-			void (*render)(hlTile *tile, hlParam *p) );
+			void (*render)(hlTile *tile, hlOp *p) );
 
 void hlOpClassAddNum( 	hlOpClass *c,
 			const char *name,
@@ -242,7 +243,7 @@ hlTile *hlOpCacheRemove(hlOp* op, int x, int y, unsigned int z);
  * if it exists. tile should not be NULL. WARNING : any modification of
  * the tile after it has been set will modify the tile in the cache 
  * as well, use hlTileDup() */
-void 	hlOpCacheSet(hlOp* op, hlTile*tile, int tx, int ty,unsigned int tz);
+void 	hlOpCacheSet(hlOp* op, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty,unsigned int tz);
 
 /*returns the tile in the cache. returns NULL if there is no tile in
  * the cache. WARNING any modification of the returned tile will modify

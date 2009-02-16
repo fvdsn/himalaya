@@ -106,7 +106,7 @@ void hlDrawOp(hlTile *a, hlOp *p, int tx, int ty, unsigned int tz){
 	hlColor *c = hlOpGetAllColor(p);
 	hlCS cs = hlColorGetCS(c);
 	int chan = hlCSGetChan(cs);
-	float *num = hlOpGetAllNum(p);
+	float *num = hlOpGetAllValue(p);
 	switch(hlCSGetBpc(cs)){
 		case HL_8B:
 		hl_draw_8b(a,id,c,chan,num,tx,ty,tz);

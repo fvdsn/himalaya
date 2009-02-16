@@ -351,7 +351,7 @@ void hl_math_32b(hlTile *t, unsigned int id, const uint32_t chan, const float * 
 }
 void hlAdjOpMath(hlTile *t, hlOp *p){
 	uint32_t chan = hlCSGetChan(hlOpGetCSIn(p));
-	float *num = hlOpGetAllNum(p);
+	float *num = hlOpGetAllValue(p);
 	int id = hlOpGetId(p);
 	switch(hlCSGetBpc(hlOpGetCSIn(p))){
 		case HL_8B:{  hl_math_8b(t,id,chan,num);break;}
@@ -427,7 +427,7 @@ void hl_chanmix_32b(hlTile *t,unsigned int chan, const float *n){
 }
 void hlAdjOpChanmix(hlTile *t, hlOp *p){
 	uint32_t chan = hlCSGetChan(hlOpGetCSIn(p));
-	float *num = hlOpGetAllNum(p);
+	float *num = hlOpGetAllValue(p);
 	switch(hlCSGetBpc(hlOpGetCSIn(p))){
 		case HL_8B:{ hl_chanmix_8b(t,chan,num);break;}
 		case HL_32B:{ hl_chanmix_32b(t,chan,num);break;}

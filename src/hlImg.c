@@ -217,7 +217,12 @@ hlOpRef hlImgPopOp(hlImg *img){
 		return 0;
 	}
 }
-hlOpRef lImgPushOp(hlImg *img, hlOp* op){
+hlOpRef hlImgPushOp(hlImg *img, hlOp* op){
+	if(img->top){
+		hlOpSetCSIn(op,hlOpGetCSIn(img->top));
+	}else{
+		hlOpSetCSIn(op,hlFrameCS(img->source));
+	}
 	insert_op(NULL,op,img->top);
 	img->state  = HL_STATE_UNSAVED;
 	img->top    = op;
@@ -319,11 +324,17 @@ hlTile *hl_op_render_adj(hlOp* op, bool top, int x, int y, unsigned int z){
 		op->render(tile,op);
 		if(op->caching || top ){ 	/*put tile in cache*/
 			if(top){
-				hlOpCacheSet(op,tile,x,y,z);
+				hlOpCacheSet(op,tile,cs,
+						hlImgSizeX(op->img,0),
+						hlImgSizeY(op->img,0),
+						x,y,z);
 				return tile;
 			}
 			else{
-				hlOpCacheSet(op,tile,x,y,z);
+				hlOpCacheSet(op,tile,cs,
+						hlImgSizeX(op->img,0),
+						hlImgSizeY(op->img,0),
+						x,y,z);
 				return hlTileDup(tile,cs);
 			}
 		}
@@ -369,13 +380,19 @@ hlTile *hl_op_render_blend(hlOp* op, bool top, int x, int y, unsigned int z){
 		hlBlendOp(tile,tileup,op);
 		if(op->caching || top ){ 	/*put tile in cache*/
 			if(top){
-				hlOpCacheSet(op,tile,x,y,z);
+				hlOpCacheSet(	op,tile,cs,
+						hlImgSizeX(op->img,0),
+						hlImgSizeY(op->img,0),
+						x,y,z);
 				return tile;
 			}
 			else{	/* if not top operation, the tile will
 				be modified later, so we return a copy
 				of the tile */
-				hlOpCacheSet(op,tile,x,y,z);
+				hlOpCacheSet(	op,tile,cs,
+						hlImgSizeX(op->img,0),
+						hlImgSizeY(op->img,0),
+						x,y,z);
 				return hlTileDup(tile,cs);
 			}
 		}
@@ -410,11 +427,17 @@ hlTile *hl_op_render_draw(hlOp* op, bool top, int x, int y, unsigned int z){
 		hlDrawOp(tile,op,x,y,z);
 		if(op->caching || top ){ 	/*put tile in cache*/
 			if(top){
-				hlOpCacheSet(op,tile,x,y,z);
+				hlOpCacheSet(op,tile,cs,
+						hlImgSizeX(op->img,0),
+						hlImgSizeY(op->img,0),
+						x,y,z);
 				return tile;
 			}
 			else{
-				hlOpCacheSet(op,tile,x,y,z);
+				hlOpCacheSet(op,tile,cs,
+						hlImgSizeX(op->img,0),
+						hlImgSizeY(op->img,0),
+						x,y,z);
 				return hlTileDup(tile,cs);
 			}
 		}
