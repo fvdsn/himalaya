@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "hlFrame.h"
-#include "hlDebug.h"
 
 typedef struct hl_node{
 	uint32_t x;
@@ -51,7 +50,6 @@ static hlNode* hl_new_node(uint32_t x, uint32_t y){
 	memset(n,0,sizeof(hlNode));
 	n->x = x;
 	n->y = y;
-	hl_debug_mem_alloc(HL_MEM_NODE);
 	return n;
 }
 hlFrame* hlNewFrame(hlColor bgcol, int sx, int sy){
@@ -69,7 +67,6 @@ hlFrame* hlNewFrame(hlColor bgcol, int sx, int sy){
 	f->cs = hlColorGetCS(&bgcol);
 	f->bg = hlNewTile(hlColorGetCS(&bgcol));
 	hlTileFill(f->bg,&bgcol);
-	hl_debug_mem_alloc(HL_MEM_FRAME);
 	return f;
 }
 
@@ -84,7 +81,6 @@ static void hl_free_node_tree(hlNode *n){
 			hlFreeTile(n->tile);
 		}
 		free(n);
-		hl_debug_mem_free(HL_MEM_NODE);
 	}
 }
 void hlFramePurge(hlFrame *f){
@@ -104,7 +100,6 @@ void hlFreeFrame(hlFrame *f){
 	hl_free_node_tree(f->blroot);
 	hlFreeTile(f->bg);
 	free(f);
-	hl_debug_mem_free(HL_MEM_FRAME);
 }
 
 /* 	hlFrameSizeXY(..) / hlFrameTileXY(..) / etc ... */
@@ -350,19 +345,15 @@ static void hl_remove_child_node(hlNode *node, hlNode *parent){
 	if(parent->tl == node){
 		parent->tl = NULL;
 		free(node);
-		hl_debug_mem_free(HL_MEM_NODE);
 	}else if(parent->tr == node){
 		parent->tr = NULL;
 		free(node);
-		hl_debug_mem_free(HL_MEM_NODE);
 	}else if(parent->br == node){
 		parent->br = NULL;
 		free(node);
-		hl_debug_mem_free(HL_MEM_NODE);
 	}else if(parent->bl == node){
 		parent->bl = NULL;
 		free(node);
-		hl_debug_mem_free(HL_MEM_NODE);
 	}else{
 		assert(0 && "frame insanity");
 	}

@@ -2,17 +2,16 @@
 #define __HL_IMG_H__
 
 #include <stdbool.h>
+#include "hlOp.h"
 #include "hlDataType.h"
 #include "hlTile.h"
 #include "hlFrame.h"
-#include "hlParam.h"
 #include "hlADT.h"
 #include "hlRegion.h"
 
 
-
-#define HL_STATE_CURRENT 0 
-#define HL_STATE_UNSAVED 0 /* the current unsaved image state */
+void hlInit(void);
+void hlExit(void);
 
 /**
  * Creates Img with bg color 'color', size sx,sy in pixels,
@@ -61,70 +60,50 @@ hlRegion hlImgGetRegion(hlImg *img);
  * @param state : a state of the image. 
  * @return 	: the count of operation in the image state.
  */
-int hlImgGetOpCount(hlImg *img, hlState state);
+int 	hlImgGetOpCount(hlImg *img, hlState state);
 /**
  * Puts a new operation on top of the operation list of the current
  * state. That means add an operation that will be executed after
  * all the previous that has been saved in the state. 
  * @param img 	: the image
- * @param p 	: the parameter of the new operation
+ * @param op 	: the operation
  * @return 	: a reference that can be used to  find this operation in
  * a different saved state. 
  */
-hlOpRef hlImgPushNewOp(hlImg *img, hlParam *p);
-/**
- * Puts a new blending operation on top of the image operation list 
- * @param img 		: the image where the operation will be added.
- * @param blend_mode	: the operation id that corresponds to the blending mode.
- * @param up 		: the image that will be blended onto
- * @param up_state	: the state of the blended image. if it is unsaved, 
- * 			it will be saved automatically.
- * @param alpha		: the alpha (linear) blending parameter
- * @param mix		: the mix (nonlinear) blending parameter. 
- */
-hlOpRef hlImgPushNewBlendOp(	hlImg *img,
-				int blend_mode, 
-				hlImg *up, 
-				hlState up_sate, 
-				float *alpha, 
-				float *mix);
+hlOpRef hlImgPushOp(hlImg *img, hlOp *op);
 /**
  * Makes the current without the current top operation.  
  * @param img 	: the image
  * @return 	: the ref of the popped operation 
  */
 hlOpRef hlImgPopOp(hlImg *img);
-/**
- * Adds a new operation to the operation stack and makes it the
- * current top operation.  
- * @param img 	: the image
- * @return 	: the ref of the popped operation 
- */
-hlOpRef hlImgPushOp(hlImg *img,hlOp * op);
 /** 
  * Returns the parameter of an operation in the current state
  * for direct modification access. 
  * @param img 	: the image
  * @param ref 	: the reference of the operation that will be modified.
- * @return 	: the parameter that can be modified. Call hlImgEndModOp after
- * 		the parameter has been modified to clean stuff up.
+ * @return 	: the operation that can be modified. Call hlImgEndModOp after
+ * 		the operation has been modified to clean stuff up.
  */
-hlParam * hlImgModOpBegin(hlImg *img, hlOpRef ref);
+hlOp* 	hlImgModOpBegin(hlImg *img, hlOpRef ref);
 /**
  * Closes the operation modification
  * @param img : the image.
  * @parm ref : the modified operation OpRef
  */
-void      hlImgModOpEnd(hlImg *img, hlOpRef ref);
+void	hlImgModOpEnd(hlImg *img, hlOpRef ref);
 /**
  * Marks the operation as having a very high probability
  * of beeing modified.
  * @param img : the image.
  * @param ref : the operation likely to be modified 
  */
-void hlImgModOpHint(hlImg *img, hlOpRef ref);
+void 	hlImgModOpHint(hlImg *img, hlOpRef ref);
 
 /*------------- STATE -------------*/
+
+#define HL_STATE_CURRENT 0 
+#define HL_STATE_UNSAVED 0 /* the current unsaved image state */
 
 /**
  * the default unsaved state is HL_STATE_UNSAVED. Saving 
@@ -234,39 +213,6 @@ hlFrame *hlImgReadFrame(hlImg *img, hlState s);
 hlRaw 	*hlImgRenderNewRaw(hlImg *img, hlRegion r, hlState s);
 void hlImgRenderToRaw(hlImg *img, hlRaw*raw, hlState state, int px, int py, unsigned int z);
 
-/***********************************************+
- * 	Operation functions 			|
- * *********************************************/
-
-hlOp* 	hlNewOp(hlParam *p);
-hlOp* 	hlDupOp(hlOp *p);
-void 	hlFreeOp(hlOp* op);
-void 	hlPrintOp(hlOp *op);
-/*if caching is enabled for an operation, a copy of every tile produced
- * by the operation is put in the cache. tiles in the cache should always be up to date. */
-
-void	hlOpCacheEnable(hlOp*op);
-
-/*when caching is disabled , every cache access results in the removal from the corresponding tile in the cache */
-void 	hlOpCacheDisable(hlOp*op);
-
-/*removes every tile in the cache and frees it*/
-void 	hlOpCacheFree(hlOp*op);
-
-/*removes the tiles from the cache and returns it*/
-hlTile *hlOpCacheRemove(hlOp* op, int x, int y, unsigned int z);
-
-/*places a copy of the tile in the cache. frees the original one,
- * if it exists. tile should not be NULL. WARNING : any modification of
- * the tile after it has been set will modify the tile in the cache 
- * as well, use hlTileDup() */
-void 	hlOpCacheSet(hlOp* op, hlTile*tile, int tx, int ty,unsigned int tz);
-
-/*returns the tile in the cache. returns NULL if there is no tile in
- * the cache. WARNING any modification of the returned tile will modify
- * the cache as well. use hlTileDup() if you plan to modify the tile*/
-hlTile *hlOpCacheGet(hlOp* op, int tx, int ty, unsigned int tz);
-
 /* renders the tile in the designed op and below. if an operation
  * has caching enabled, a copy of the result is put into the tile.
  * if an operation has caching disabled and the corresponding tile
@@ -282,9 +228,6 @@ hlTile *hlOpCacheGet(hlOp* op, int tx, int ty, unsigned int tz);
  * */
 hlTile *hlOpRenderTile(hlOp* op, bool istop, int tx, int ty, unsigned int tz);
 
-/***********************************************+
- * 	Operation Framework 			|
- * *********************************************/
 
 #endif
 

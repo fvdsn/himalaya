@@ -8,7 +8,6 @@
 #include <IL/il.h>
 #include <IL/ilu.h>
 #include <IL/ilut.h>
-#include "hlDebug.h"
 
 int ilinit = 0;
 
@@ -21,15 +20,11 @@ hlRaw* hlNewRaw(hlCS cs, int sizex, int sizey){
 	raw->sy = sizey;
 	raw->cs = cs;
 	raw->data = (uint8_t*)malloc(sizex*sizey*hlCSGetBpp(cs));
-	hl_debug_mem_alloc_various(sizex*sizey*hlCSGetBpp(cs));
-	hl_debug_mem_alloc(HL_MEM_RAW);
 	return raw;
 }
 void hlFreeRaw(hlRaw *raw){
 	free(raw->data);
-	hl_debug_mem_alloc_various(hlRawSizeX(raw)*hlRawSizeY(raw)*hlCSGetBpp(hlRawCS(raw)));
 	free(raw);
-	hl_debug_mem_free(HL_MEM_RAW);
 	return;
 }
 uint64_t hlRawGetByteCount(hlRaw *raw){

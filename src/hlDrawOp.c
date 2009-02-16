@@ -101,12 +101,12 @@ static void hl_draw_8b(hlTile *a, int id, hlColor *c, int chan, float *num, int 
 	}
 }
 
-void hlDrawOp(hlTile *a, hlParam *p, int tx, int ty, unsigned int tz){
-	int id = hlParamGetId(p);
-	hlColor *c = hlParamGetColor(p);
+void hlDrawOp(hlTile *a, hlOp *p, int tx, int ty, unsigned int tz){
+	int id = hlOpGetId(p);
+	hlColor *c = hlOpGetAllColor(p);
 	hlCS cs = hlColorGetCS(c);
 	int chan = hlCSGetChan(cs);
-	float *num = hlParamGetNum(p);
+	float *num = hlOpGetAllNum(p);
 	switch(hlCSGetBpc(cs)){
 		case HL_8B:
 		hl_draw_8b(a,id,c,chan,num,tx,ty,tz);

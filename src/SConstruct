@@ -6,21 +6,19 @@ env = Environment(	CC = 'gcc',
 			LIBS = ['IL','ILU','m'], 
 			LIBPATH = '.' )
 env.Program(	'a.bin', 
-		[	#'regressions.c', 
-			'hlColorSpace.c', 
+		[	'hlColorSpace.c', 
 			'hlColor.c',
 			'hlTile.c',
 			'hlRaw.c',
 			'hlImg.c',
-			'hlParam.c',
 			'hlFrame.c',
 			'hlAdjOp.c',
 			'hlRegion.c',
 			'hlADT.c',
+			'hlOp.c',
 			'hlBlendOp.c',
 			'hlDrawOp.c',
-			'hlUndo.c',
-			'hlDebug.c'])
+			'hlInit.c'])
 
 
 #Scons examples in case you need it...

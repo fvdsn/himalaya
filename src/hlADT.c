@@ -2,7 +2,6 @@
 #include<assert.h>
 #include<stdio.h>
 #include"hlADT.h"
-#include "hlDebug.h"
 
 
 static unsigned int hash(unsigned int size, unsigned int key){
@@ -10,17 +9,14 @@ static unsigned int hash(unsigned int size, unsigned int key){
 }
 hlHash *hlNewHash(unsigned int size){
 	hlHash *h = (hlHash*)malloc(sizeof(hlHash));
-	hl_debug_mem_alloc(HL_MEM_HASH);
 	assert(size);
 	h->table = (hlHNode**)malloc(size * sizeof(hlHNode*));
-	hl_debug_mem_alloc_various(size*sizeof(hlHNode*));
 	h->size = size;
 	h->objcount = 0;
 	return h;
 }
 hlHNode * hl_new_hnode(unsigned int key, void * data){
 	hlHNode * hn = (hlHNode*)malloc(sizeof(hlHNode));
-	hl_debug_mem_alloc_various(sizeof(hlHNode));
 	hn->key = key;
 	hn->data = data;
 	hn->next = NULL;
@@ -74,7 +70,6 @@ void *hlHashRem(hlHash *h, unsigned int key){
 			*prev = next;
 			tmp = node->data;
 			free(node);
-			hl_debug_mem_free_various(sizeof(hlHNode));
 			h->objcount--;
 			return tmp;
 		}

@@ -7,7 +7,7 @@
 #define MAX_FLOAT 1000000
 
 /* 	hlAdjOpSkip(...) 		*/
-void hlAdjOpSkip(hlTile *t, hlParam *p){
+void hlAdjOpSkip(hlTile *t, hlOp *p){
 	t = NULL;	/*stupid warnings*/
 	p = NULL;
 	return;
@@ -36,17 +36,17 @@ void hl_invert_32b(hlTile *t, const uint32_t chan){
 		}
 	}
 }
-void hlAdjOpInvert(hlTile *t, hlParam *p){
-	uint32_t chan = hlCSGetChan(hlParamGetCS(p));
-	switch(hlCSGetBpc(hlParamGetCS(p))){
+void hlAdjOpInvert(hlTile *t, hlOp *p){
+	uint32_t chan = hlCSGetChan(hlOpGetCSIn(p));
+	switch(hlCSGetBpc(hlOpGetCSIn(p))){
 		case HL_8B:{hl_invert_8b(t,chan);break;}
 		case HL_32B:{hl_invert_32b(t,chan);break;}
 	}
 }
 
 /* 	hlAdjOpFill(...) 		*/
-void hlAdjOpFill(hlTile *t, hlParam *p){
-	hlTileFill(t,hlParamGetColor(p));
+void hlAdjOpFill(hlTile *t, hlOp *p){
+	hlTileFill(t,hlOpGetAllColor(p));
 }
 
 /* 	hlAdjOpMath(...) 		*/
@@ -349,11 +349,11 @@ void hl_math_32b(hlTile *t, unsigned int id, const uint32_t chan, const float * 
 	}
 	return;
 }
-void hlAdjOpMath(hlTile *t, hlParam *p){
-	uint32_t chan = hlCSGetChan(hlParamGetCS(p));
-	float *num = hlParamGetNum(p);
-	int id = hlParamGetId(p);
-	switch(hlCSGetBpc(hlParamGetCS(p))){
+void hlAdjOpMath(hlTile *t, hlOp *p){
+	uint32_t chan = hlCSGetChan(hlOpGetCSIn(p));
+	float *num = hlOpGetAllNum(p);
+	int id = hlOpGetId(p);
+	switch(hlCSGetBpc(hlOpGetCSIn(p))){
 		case HL_8B:{  hl_math_8b(t,id,chan,num);break;}
 		case HL_32B:{ /*hl_math_32b(t,p->id,chan,p->num)*/;break;}
 	}
@@ -425,46 +425,13 @@ void hl_chanmix_32b(hlTile *t,unsigned int chan, const float *n){
 		}
 	}
 }
-void hlAdjOpChanmix(hlTile *t, hlParam *p){
-	uint32_t chan = hlCSGetChan(hlParamGetCS(p));
-	float *num = hlParamGetNum(p);
-	switch(hlCSGetBpc(hlParamGetCS(p))){
+void hlAdjOpChanmix(hlTile *t, hlOp *p){
+	uint32_t chan = hlCSGetChan(hlOpGetCSIn(p));
+	float *num = hlOpGetAllNum(p);
+	switch(hlCSGetBpc(hlOpGetCSIn(p))){
 		case HL_8B:{ hl_chanmix_8b(t,chan,num);break;}
 		case HL_32B:{ hl_chanmix_32b(t,chan,num);break;}
 	}
 	return;
 }
-/* LEVELS 
-uint8_t hl_level_fun_32b(float in, float inmin, float inmax, float infact, float, outmin, float outmax){
-	if(in < inmin){
-		return outmin;
-	}else if(in > inmax){
-		return outmax;
-	}else if(in < (inmax - inmin)/2){
-		return (in - inmin)/(inmax-inmin)*infact*(outmax-outmin)+outmin;
-	}else{
-		return ((in - inmin)/(inmax-inmin)*(1.0-infact)+infact)*(outmax-outmin)+outmin;
-	}
-}
-void hl_levels_8b(hlTile *t,unsigned int chan, const float *n){
-	int32_t i = chan*HL_TILEWIDTH*HL_TILEWIDTH;
-	uint8_t *d = HL_DATA_8B(t);
-	int c = 0;
-	int tmp[5]
-	while((i-=chan)>=0){
-		switch(c){
-			case 5:
-			tmp = data[i+c]*
-
-
-	}
-}
-void hlAdjOpLevels(hlTile *t, hlParam *p){
-	uint32_t chan = hlCSGetChan(p->cs);
-	switch(hlCSGetBpc(p->cs)){
-		case HL_8B:{ hl_levels_8b(t,chan,p->num);break;}
-		case HL_32B:{ hl_levels_32b(t,chan,p->num);break;}
-	}
-	return;
-} */
 

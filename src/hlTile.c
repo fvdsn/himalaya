@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include "hlDebug.h"
 
 long int random();
 
@@ -11,11 +10,9 @@ hlTile *hlNewTile(hlCS cs){
 	hlTile *tile;
 	tile = (hlTile*)malloc(hlTileSize(cs));
 	assert(tile);
-	hl_debug_mem_alloc(HL_MEM_TILE);
 	return tile;
 }
 void hlFreeTile(hlTile *tile){
-	hl_debug_mem_free(HL_MEM_TILE);
 	free(tile);
 }
 int hlTileSize(hlCS cs){

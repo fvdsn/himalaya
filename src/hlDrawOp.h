@@ -1,9 +1,9 @@
 #ifndef __HL_DRAW_OP_H__
 #define __HL_DRAW_OP_H__
 #include "hlTile.h"
-#include "hlParam.h"
+#include "hlOp.h"
 
-void hlDrawOp(hlTile *a, hlParam *p,int tx, int ty, unsigned int tz);
+void hlDrawOp(hlTile *a, hlOp *p,int tx, int ty, unsigned int tz);
 /* based on the parameters and the location of the tile to be
  * rendered
  * decides if the blending operation has a) no effect,
@@ -18,10 +18,10 @@ void hlDrawOp(hlTile *a, hlParam *p,int tx, int ty, unsigned int tz);
  *	of tile *a can be skipped.
  * c) it returns HL_SEMITRANS and hlDrawOp should be used.
  */
-int  hlDrawSkip(hlParam *p,int tx, int ty, unsigned int tz );
+int  hlDrawSkip(hlOp *p,int tx, int ty, unsigned int tz );
 /* Same as hlDrawOp but way faster and discards the data in *a so it doesn't
  * have to be rendered. Example : rendering a tile inside an opaque
  * rectangle
  */
-void hlDrawOpaque(hlTile *a, hlParam *p, int tx, int ty, unsigned int tz);
+void hlDrawOpaque(hlTile *a, hlOp *p, int tx, int ty, unsigned int tz);
 #endif

@@ -2,7 +2,7 @@
 #define __HL_BLENDING_OPERATION_H__
 
 #include "hlTile.h"
-#include "hlParam.h"
+#include "hlOp.h"
 void hl_blend_mix_8b(uint8_t *down, const uint8_t* up, int channel, float mix);
 
 
@@ -26,7 +26,7 @@ int  hlBlendSkip(const hlTile *b, hlParam *p);
  * and tile b is completely opaque. or method multiply and b is completely
  * black, etc... 
  */
-void hlBlendOpaque(hlTile *a, const hlTile *b,hlParam *p);
+void hlBlendOpaque(hlTile *a, const hlTile *b,hlOp *p);
 
 #endif
 
