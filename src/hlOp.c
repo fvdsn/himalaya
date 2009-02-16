@@ -76,7 +76,15 @@ hlOp* hlNewOp(int id){
 }
 hlOp* hlDupOp(hlOp* op){
 	hlOp* dup = hlNewOp(op->id);
+	float* num   = dup->p_num;
+	hlColor* col = dup->p_color;
+	hlImg **img  = dup->p_img;
+	hlState *s   = dup->p_state;
 	memcpy(dup,op,sizeof(hlOp));
+	dup->p_num      = num;
+	dup->p_color    = col;
+	dup->p_img      = img;
+	dup->p_state    = s;
 	dup->refcount 	= 0;
 	dup->cache 	= NULL;
 	dup->caching 	= 0;

@@ -589,6 +589,7 @@ int main(int argc, char **argv){
 	hlImgPushOp(img,op);
 	
 	op = hlNewOp(HL_DRAW_RECT);
+		printf("%p\n",op);
 		hlOpSetAllValue(op,"pos_tl",100.0,50.0);
 		hlOpSetAllValue(op,"pos_br",400.0,500.0);
 		hlOpSetAllValue(op,"alpha",0.5);
@@ -596,12 +597,16 @@ int main(int argc, char **argv){
 	r = hlImgPushOp(img,op);
 
 	hlState s1 = hlImgStateSave(img);
+	printf("%d\n",s1);
 	
 	op = hlImgModOpBegin(img,r);
+		printf("%p\n",op);
 		hlOpSetAllColor(op,"fill_color",hlNewColor(cs,1.0,0.0,0.0,0.0,0.5));
+		hlOpSetAllValue(op,"pos_br",200.0,500.0);
 	hlImgModOpEnd(img,r);
 
 	hlState s2 = hlImgStateSave(img);
+	printf("%d\n",s2);
 
 	hlImgStateLoad(img,s1);
 
