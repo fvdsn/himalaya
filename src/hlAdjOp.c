@@ -112,6 +112,7 @@ void hl_math_8b(hlTile *t, unsigned int id, const uint32_t chan, const float * f
 	fact8[2] =(uint8_t) f[2];
 	fact8[3] =(uint8_t) f[3];
 	fact8[4] =(uint8_t) f[4];
+	/*printf("f[0]:%f,fact[0]:%d,fact8[0]%d\n",f[0],fact[0],(int)fact8[0]);*/
 	
 	while((i-=chan)>= 0){
 		switch(id){
@@ -353,6 +354,7 @@ void hlAdjOpMath(hlTile *t, hlOp *p){
 	uint32_t chan = hlCSGetChan(hlOpGetCSIn(p));
 	float *num = hlOpGetAllValue(p);
 	int id = hlOpGetId(p);
+	/*	printf("hlAdjOpMath: chan:%d, id:%d\n",chan,id);*/
 	switch(hlCSGetBpc(hlOpGetCSIn(p))){
 		case HL_8B:{  hl_math_8b(t,id,chan,num);break;}
 		case HL_32B:{ /*hl_math_32b(t,p->id,chan,p->num)*/;break;}

@@ -573,58 +573,46 @@ void  hlImgRenderToRaw(hlImg *img, hlRaw *raw, hlState state, int px, int py, un
 	hlRegionToRaw(hlImgReadFrame(img,state),raw,px,py,z);
 }
 
-/*int main(int argc, char**argv){
- 	hlCS cs	    = hlNewCS(HL_8B,HL_RGB);	/colorspace/
+int main(int argc, char **argv){
+ 	hlCS cs	    = hlNewCS(HL_8B,HL_RGB);	
 	hlRaw *in   = hlRawFromPng("images/girl_.png");
+	hlRaw *out  = hlNewRaw(cs,600,600);
 	hlImg *img  = hlNewImgFromSource(hlFrameFromRaw(in));
-	hlColor c   = hlNewColor(cs,255.0,128.0,0.0,0.0,255.0);
+	hlColor c   = hlNewColor(cs,0.5,1,0,0,0.9);
+	hlOp *op;
+	hlOpRef r;
 
-	/we create a new operation drawing a orange rectangle /
-	hlOp *p = hlNewOp(HL_DRAW_RECT);
-		hlOpSetColor(p,hlOpArgByName(p,"fill_color"),c);
-		hlOpSetNum(
-	hlParam *p = hlNewParam(HL_DRAW_RECT);
-		hlParamSetColor(p,c);
-		hlParamSetNum(p,100.0,120.0, 500.0,400.0, 0.8);
-	hlOpRef r = hlImgPushNewOp(img,p);
+	hlInit();
+
+	op = hlNewOp(HL_ADJ_MUL);
+		hlOpSetAllValue(op,"factor",1.0,0.7,0.5,0.0,1.0);
+	hlImgPushOp(img,op);
 	
+	op = hlNewOp(HL_DRAW_RECT);
+		hlOpSetAllValue(op,"pos_tl",100.0,50.0);
+		hlOpSetAllValue(op,"pos_br",400.0,500.0);
+		hlOpSetAllValue(op,"alpha",0.5);
+		hlOpSetAllColor(op,"fill_color",c);
+	r = hlImgPushOp(img,op);
+
 	hlState s1 = hlImgStateSave(img);
 	
-	/we create a new operation drawing a purple rectangle /
-	p = hlNewParam(HL_DRAW_RECT);
-		hlParamSetColor(p,hlNewColor(cs,255.0,0.0,128.0,0.0,255.0));
-		hlParamSetNum(p,20.0,60.0, 200.0,300.0, 0.2);
-	hlImgPushNewOp(img,p);
-
-	/we create a new operation drawing a green rectangle /
-	p = hlNewParam(HL_DRAW_RECT);
-		hlParamSetColor(p,hlNewColor(cs,20.0,255.0,0.0,0.0,255.0));
-		hlParamSetNum(p,400.0,20.0, 500.0,300.0, 0.5);
-	hlImgPushNewOp(img,p);
+	op = hlImgModOpBegin(img,r);
+		hlOpSetAllColor(op,"fill_color",hlNewColor(cs,1.0,0.0,0.0,0.0,0.5));
+	hlImgModOpEnd(img,r);
 
 	hlState s2 = hlImgStateSave(img);
 
+	hlImgStateLoad(img,s1);
 
-	hlRaw *out = hlNewRaw(cs,600,600);	/an output buffer/
+	hlImgRenderToRaw(img, out,s1, 0, 0, 0);
+	hlRawToPng( out, "out1.png");
 
-	hlImgRenderToRaw(img, out, s1, 0, 0, 0);
-	hlRawToPng( out, "images/blending-s1.png");
-
-	
-	hlImgRenderToRaw(img, out, s2, 0, 0, 0);
-	hlRawToPng( out, "images/blending-s2.png");
-	
-	/ We modify the orange rectangle to be drawn in red /
-	p = hlImgModOpBegin(img,r);
-		hlParamSetColor(p,hlNewColor(cs,255.0,0.0,0.0,0.0,255.0));
-	hlImgModOpEnd(img,r);
-
-	/we render our modifications zoomed out and centered/
-	hlImgRenderToRaw(img, out, HL_STATE_CURRENT, -200, -200, 2);
-	hlRawToPng( out, "images/blending-s3.png");
+	hlImgRenderToRaw(img, out,s2, 0, 0, 0);
+	hlRawToPng( out, "out2.png");
 
 	return 0;
-}*/
+}
 	
 /*int main(int argc, char** argv){
 	hlCS cs     = hlNewCS(HL_8B,HL_RGB);

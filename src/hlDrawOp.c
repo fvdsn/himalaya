@@ -13,7 +13,7 @@ static float hl_scale_float(float dist, int tz){
 }
 static void hl_draw_rect_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, int ty, unsigned int tz){
 	uint8_t* data = HL_DATA_8B(a);
-	const uint8_t* color = hlColorGetData(c);
+	const uint8_t *color = hlColorGetData(c);
 	const int X = tx*HL_TILEWIDTH;
 	const int Y = ty*HL_TILEWIDTH;
 	const int topx = (int)hl_scale_float(num[0],tz);

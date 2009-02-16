@@ -30,11 +30,17 @@ hlImg* hlNewImg(hlColor c, int sx, int sy);
  * 		You should not modify the source once you have set it.
  */
 hlImg* hlNewImgFromSource(hlFrame *frame);
+hlImg* hlNewImgFromRaw(hlRaw *raw);
+hlImg* hlNewImgFromImg(hlImg *img, hlState s);
 /**
  * Frees all resources used by the img.
  * @param img : the img that will be freed.
  */
 void   hlFreeImg(hlImg* img);
+void   hlLinkImg(hlImg* img);
+void   hlUnlinkImg(hlImg* img);
+void   hlLockImg(hlImg* img);
+void   hlUnlockImg(hlImg *img);
 
 /*------------- REGION -------------*/
 

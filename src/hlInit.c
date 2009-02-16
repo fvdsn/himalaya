@@ -72,7 +72,7 @@ void hlInit(void){
 	hlOpClassAddImage(	c, "up_image",	"the up image", 1);
 	
 	c = hlNewOpClass(	"blend_mult",	"blend two images with multiplicative blending mode",
-				HL_BLEND_MIX,	HL_BLENDING,	NULL	);
+				HL_BLEND_MULT,	HL_BLENDING,	NULL	);
 	hlOpClassAddNum(	c, "alpha", 	"linear blending factor", 1, 0,1 );
 	hlOpClassAddNum(	c, "mix", 	"nonlinear blending factor", 1, 0,1 );
 	hlOpClassAddImage(	c, "up_image",	"the up image", 1);

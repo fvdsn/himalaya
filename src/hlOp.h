@@ -88,7 +88,7 @@ int	hlOpLocked(hlOp *op);
 #define HL_MAX_ARG 8
 
 enum hl_arg_type{
-	HL_ARG_NUM,	/* array of floats */
+	HL_ARG_NUM = 0,	/* array of floats */
 	HL_ARG_COLOR,	/* array of colors */
 	HL_ARG_IMG	/* array of [hlImg,hlState] */
 };

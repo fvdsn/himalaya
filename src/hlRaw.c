@@ -116,11 +116,9 @@ void hlRawToPng(hlRaw*r,char *path){
 		hlCSGetChan(r->cs) == 4 );
 	ilGenImages(1,&img);
 	ilBindImage(img);
-	printf("coucou\n");
 	hlRawFlipY(r);
 	ilTexImage(r->sx,r->sy,1,4,IL_RGBA,IL_UNSIGNED_BYTE,r->data);
 	ilEnable(IL_FILE_OVERWRITE);
-	printf("coucou\n");
 	ilSaveImage(path);
 	hlRawFlipY(r);
 }

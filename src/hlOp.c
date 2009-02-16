@@ -107,12 +107,18 @@ void hlFreeOp(hlOp* op){
 	free(op);
 }
 void hlPrintOp(hlOp *op){
+	int i = 0;
 	printf("<Op> \n   id:%d\n   type:%d\n",op->id,op->type);
 	if(op->caching){
 		printf("   caching: true\n");
 	}
 	else{
 		printf("   caching: false\n");
+	}
+	if(op->locked){
+		printf("   locked:  true\n");
+	}else{
+		printf("   locked:  false\n");
 	}
 	printf("   down:%p\n",(void*)op->down);
 	printf("   img:%p\n",(void*)op->img);
@@ -126,6 +132,20 @@ void hlPrintOp(hlOp *op){
 	}
 	else{
 		printf("NULL\n");
+	}
+	printf("   csin:\n");
+	hlPrintCS(op->cs_in);
+	printf("   p_numc:%d\n",op->p_numc);
+	i = 0;
+	while(i < op->p_numc){
+		printf("        [%d] : %f \n",i,op->p_num[i]);
+		i++;
+	}
+	printf("   p_colorc:%d\n",op->p_colorc);
+	i = 0;
+	while(i < op->p_colorc){
+		hlPrintColor(&(op->p_color[i]));
+		i++;
 	}
 	printf("</Op>\n");
 	return;
@@ -298,9 +318,11 @@ void	hlOpSetAllValue(hlOp*op, const char *argname, ... ){
 	int arg = hlOpArgByName(op,argname);
 	int index = hlOpArgSize(op,arg);
 	int i = 0;
+	float f;
 	va_start(ap,argname);
 	while(i < index){
-		hlOpSetValue(op,arg,index,(float)(va_arg(ap,double)));
+		f = (float)(va_arg(ap,double));
+		hlOpSetValue(op,arg,i,f);
 		i++;
 	}
 	va_end(ap);
@@ -311,7 +333,7 @@ void	hlOpSetColor(hlOp*op, int arg, int index, hlColor col){
 		&& index < hlOpArgSize(op,arg)){
 		op->p_color[ hl_op_get_arg(op,arg)->index + index ] = col;
 	}else{
-		printf("ERROR : hlOpSetColor(...) arg is a color, color not set\n");
+		printf("ERROR : hlOpSetColor(...) arg is not a color, color not set\n");
 	}
 }
 void	hlOpSetAllColor(hlOp*op, const char *argname, ... ){
@@ -321,7 +343,7 @@ void	hlOpSetAllColor(hlOp*op, const char *argname, ... ){
 	int i = 0;
 	va_start(ap,argname);
 	while(i < index){
-		hlOpSetColor(op,arg,index,va_arg(ap,hlColor));
+		hlOpSetColor(op,arg,i,va_arg(ap,hlColor));
 		i++;
 	}
 	va_end(ap);
@@ -343,7 +365,7 @@ void	hlOpSetAllImg(hlOp*op, const char *argname, ... ){
 	int i = 0;
 	va_start(ap,argname);
 	while(i < index){
-		hlOpSetImg(op,arg,index,va_arg(ap,hlImg*),va_arg(ap,hlState));
+		hlOpSetImg(op,arg,i,va_arg(ap,hlImg*),va_arg(ap,hlState));
 		i++;
 	}
 	va_end(ap);
@@ -411,7 +433,7 @@ void hlOpClassAddColor( hlOpClass *c,
 	a->desc = (char*)desc;
 	a->size = size;
 	a->type = HL_ARG_COLOR;
-	a->index = c->numc;
+	a->index = c->colorc;
 	c->colorc += a->size;
 	c->argc++;
 	if(c->argc > HL_MAX_ARG){
@@ -428,7 +450,7 @@ void hlOpClassAddImage( hlOpClass *c,
 	a->desc = (char*)desc;
 	a->size = size;
 	a->type = HL_ARG_IMG;
-	a->index = c->numc;
+	a->index = c->imgc;
 	c->imgc += a->size;
 	c->argc++;
 	if(c->argc > HL_MAX_ARG){
