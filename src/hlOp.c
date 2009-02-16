@@ -133,7 +133,6 @@ void hlPrintOp(hlOp *op){
 	printf("   refcount:%d\n",op->refcount);
 	printf("   ref:%d\n",op->ref);
 	printf("   param:\n");
-	/* TODO hlPrintParam(op->param);*/
 	printf("   cache:\n");
 	if(op->cache){
 		hlPrintFrame(op->cache);

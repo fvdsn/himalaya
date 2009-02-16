@@ -89,9 +89,10 @@ void hlInit(void){
 	c = hlNewOpClass(	"draw_circle",	"draw a circle",
 				HL_DRAW_CIRCLE,	HL_DRAW,	NULL	);
 	hlOpClassAddNum(	c,"pos_center","center of the circle",2,0,1);
-	hlOpClassAddNum(	c,"radius",	"radius of the circle",1,0,500);
-	hlOpClassAddNum(	c,"softness",	"inner radius"		,1,0,1);
+	hlOpClassAddNum(	c,"radius_in",	"inner radius",1,0,500);
+	hlOpClassAddNum(	c,"radius_out",	"outer radius"	,1,0,500);
 	hlOpClassAddNum(	c,"alpha",	"opacity of the circle",1,0,1);
+	hlOpClassAddColor(	c,"fill_color", "the fill color ",1);
 
 }
 

@@ -11,7 +11,6 @@
 
 
 void hlInit(void);
-void hlExit(void);
 
 /**
  * Creates Img with bg color 'color', size sx,sy in pixels,
