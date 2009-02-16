@@ -29,6 +29,7 @@ enum hl_op_id{
 	HL_DRAW_CIRCLE,
 	HL_OP_COUNT
 };
+
 enum hl_op_type{
 	HL_ADJUSTMENT,
 	HL_BLENDING,
@@ -36,6 +37,7 @@ enum hl_op_type{
 	HL_TRANSFORM,
 	HL_FILTER
 };
+
 hlParam* hlNewParam(enum hl_op_id id);
 hlParam* hlDupParam(hlParam *p);
 void 	hlFreeParam(hlParam *p);
@@ -48,18 +50,18 @@ int	hlParamGetId(hlParam *p);
 void 	hlParamSetCS(hlParam *p, hlCS cs);
 hlCS 	hlParamGetCS(hlParam *p);
 
-void 	hlParamSetNum(hlParam *p, ...);    
-void    hlParamSetVNum(hlParam *p,unsigned int numc, ...);
+void	hlParamSetNum(hlParam *p, int index, float val);
 float * hlParamGetNum(hlParam *p);	
-unsigned int 	hlParamGetNumCount(hlParam *p);
+int 	hlParamGetNumCount(hlParam *p);
 
 
-void 	hlParamSetColor(hlParam *p, ...); 
+void 	hlParamSetColor(hlParam *p,int index, hlColor col );    
 hlColor*hlParamGetColor(hlParam *p);	
-unsigned int	hlParamGetColorCount(hlParam *p);
+int	hlParamGetColorCount(hlParam *p);
 
-void 	hlParamSetImg(hlParam *p, hlImg *img, hlState s);
-hlImg*  hlParamGetImg(hlParam *p);
-hlState hlParamGetImgState(hlParam *p);	
+void 	 hlParamSetImg(hlParam *p, int index, hlImg *img, hlState s);
+int	 hlParamGetImgCount(hlParam *p);
+hlImg**  hlParamGetImg(hlParam *p);
+hlState* hlParamGetState(hlParam *p);	
 #endif
 
