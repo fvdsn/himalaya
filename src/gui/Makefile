@@ -4,7 +4,8 @@ CC		=	gcc
 
 CFLAGS	=	-Wall -c -g -std=c99 \
 			`sdl-config --cflags` \
-			`pkg-config --cflags cairo`
+			`pkg-config --cflags cairo` \
+			`freetype-config --cflags`
 
 LDFLAGS	=	`sdl-config --libs` \
 			`pkg-config --libs cairo` \
@@ -16,7 +17,9 @@ SRCS	=	uiCore.c \
 			uiDraw.c \
 			uiWidget.c \
 			uiTest.c \
-			uiState.c
+			uiState.c \
+			uiFont.c \
+			uiIterator.c
 
 OBJS	=	$(SRCS:.c=.o)
 

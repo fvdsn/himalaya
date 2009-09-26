@@ -1,5 +1,7 @@
 #ifndef __UI_CORE_H__
 #define __UI_CORE_H__
+#include "uiFont.h"
+#include "uiIterator.h" 
 
 #define UI_NAME_LENGTH 32
 #define UI_FRAME_INTERVAL 20
@@ -10,12 +12,17 @@ typedef struct uiEntity_s uiEntity;
 typedef struct uiState_s uiState;
 
 enum ui_entity_type{
-	UI_ENT_WINDOW,
+	UI_ENT_SCREEN,
 	UI_ENT_PANEL,
 	UI_ENT_BUTTON,
 	UI_ENT_SLIDER,
 	UI_ENT_COLOR,
-	UI_ENT_CANVAS
+	UI_ENT_CANVAS,
+	UI_ENT_LABEL,
+	UI_ENT_CAIROLABEL,
+	UI_ENT_REGION,
+	UI_ENT_TABS,
+	UI_ENT_TAB
 };
 
 #define ALIGN_CENTER 0
@@ -25,12 +32,17 @@ enum ui_entity_type{
 #define ALIGN_BOTTOM -1
 
 struct uiEntity_s{
-	int type;
 	char name[UI_NAME_LENGTH];
+	int type;
+	int subtype;
+	int uid;
 	int alive;
+	int active;
+	int enabled;
+	uiEntity *parent;
+	uiList *child;
 
 	/* callbacks */
-	uiEntity *parent;
 	void (*draw)(uiEntity *self);
 	int (*event)(uiEntity *self, uiEvent *event);
 	int (*click)(uiEntity *self, int button, int down, float x, float y, float pressure);
@@ -38,7 +50,6 @@ struct uiEntity_s{
 	
 	/* drawing */
 	int visible;
-	int active;
 	float posx;
 	float posy;
 	float posz;
@@ -73,18 +84,19 @@ struct uiEntity_s{
 	void *data;
 };
 
-uiEntity * uiEntityNew(const char *name, int type, uiEntity *parent);
+uiEntity * uiEntityNew(const char *name, int type);
 void	uiEntitySetPos(uiEntity *ent, float posx, float posy);
 void 	uiEntitySetSize(uiEntity *ent, float sizex, float sizey);
 void    uiEntityFree(uiEntity *ent);
 void 	uiEntityCleanAll(void);
 void 	uiEntityDrawAll(void);
-void 	uiEntityAdd(uiEntity*ent);
+void 	uiEntityAdd(uiEntity*ent,uiEntity *parent);
 float 	uiEntityGetPosX(uiEntity *ent);
 float 	uiEntityGetPosY(uiEntity *ent);
 float 	uiEntityGetPosZ(uiEntity *ent);
 float 	uiEntityGetSizeX(uiEntity *ent);
 float 	uiEntityGetSizeY(uiEntity *ent);
+void	uiScreenSet(uiEntity *ent);
 
 void  	uiEntityMakeTexture(uiEntity *ent, int sizex, int sizey);
 void  	uiEntitySetTexture(uiEntity *ent, char *texture, int sizex, int sizey);
@@ -165,6 +177,20 @@ enum color_modifier{
 float *uiWindowGetColor(int type, int modifier);
 int  uiWindowGetSizeX(void);
 int  uiWindowGetSizeY(void);
+
+enum font_face{
+	UI_FONT_SANS,
+	UI_FONT_MONO,
+	UI_FONT_FACE_COUNT
+};
+enum font_type{
+	UI_FONT_NORMAL,
+	UI_FONT_BOLD,
+	UI_FONT_ITALIC,
+	UI_FONT_BOLD_ITALIC,
+	UI_FONT_TYPE_COUNT
+};
+uiFont *uiWindowGetFont(int face, int type);
 void uiWindowDrawBegin(void);
 void uiWindowDrawEnd(void);
 void uiNewWindow(const char *name, int sizex, int sizey);

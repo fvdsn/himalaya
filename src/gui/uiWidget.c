@@ -49,7 +49,6 @@ static void uiButtonDraw(uiEntity *self){
 	float x = uiEntityGetPosX(self);
 	float y = uiEntityGetPosY(self);
 	float z = uiEntityGetPosZ(self);
-	glDisable(GL_TEXTURE_RECTANGLE_ARB);
 	glColor4f(0,0,0,0.2);
 	uiRectDraw(x+3,y-3,z-0.1,self->sizex,self->sizey);
 	if(self->mouseover){
@@ -61,6 +60,7 @@ static void uiButtonDraw(uiEntity *self){
 	if(!self->tex){
 		printf("rendering texture\n");
 		self->tex = malloc(self->tex_sizex*self->tex_sizey*4);
+		memset(self->tex,0,self->tex_sizex*self->tex_sizey*4);
 		surface = cairo_image_surface_create_for_data((unsigned char*)self->tex,
 				CAIRO_FORMAT_ARGB32,
 				self->tex_sizex,
@@ -86,12 +86,17 @@ static int uiButtonClick(uiEntity *self,int button, int down, float x, float y, 
 	}
 	return 0;
 }
+uiEntity *uiScreenNew(char *name){
+	uiEntity *s = uiEntityNew(name,UI_ENT_SCREEN);
+	uiEntitySetSize(s,10000,10000);
+	uiEntitySetPos(s,0,0);
+	return s;
+}
 uiEntity *uiButtonNew(char *name,
-		uiEntity *parent, 
 		int id,
 		void(*click)(uiEntity *self, int id)){
 	uiButtonData *bd = (uiButtonData*)malloc(sizeof(uiButtonData));
-	uiEntity *b = uiEntityNew(name,UI_ENT_BUTTON,parent);
+	uiEntity *b = uiEntityNew(name,UI_ENT_BUTTON);
 	uiEntitySetSize(b,60,16);
 	bd->id = id;
 	bd->click = click;
@@ -104,12 +109,54 @@ uiEntity *uiButtonNew(char *name,
 	b->tex_sizey = b->sizey;
 	return b;
 }
+static void uiLabelDraw(uiEntity *self){
+	uiLabelData *d = (uiLabelData*)self->data;
+	float x = uiEntityGetPosX(self);
+	float y = uiEntityGetPosY(self);
+	float z = uiEntityGetPosZ(self);
+	uiTextDraw(x,y,z+0.1,
+			d->font_size,
+			uiWindowGetFont(d->font_police,d->font_style),
+			d->font_color,
+			d->text);
+}
+uiEntity *uiLabelNew(char *name, const char *text, const float *color,
+		int font_police, int font_style, float font_size){
+	uiEntity *l = uiEntityNew(name,UI_ENT_LABEL);
+	uiLabelData *d = (uiLabelData*)malloc(sizeof(uiLabelData));
+	memset(d,0,sizeof(uiLabelData));
+	uiEntitySetSize(l,128,30);
+	memcpy(d->font_color,color,4*sizeof(float));
+	strncpy(d->text,text,UI_TEXT_LENGTH);
+	d->font_police = font_police;
+	d->font_style  = font_style;
+	d->font_size   = font_size;
+	l->data = d;
+	l->draw = uiLabelDraw;
+	return l;
+}
+uiEntity *uiCairoLabelNew(char *name, const char *text, const float *color,
+		float font_size){
+	uiEntity *l = uiEntityNew(name,UI_ENT_CAIROLABEL);
+	uiLabelData *d = (uiLabelData*)malloc(sizeof(uiLabelData));
+	memset(d,0,sizeof(uiLabelData));
+	uiEntitySetSize(l,128,30);
+	memcpy(d->font_color,color,4*sizeof(float));
+	strncpy(d->text,text,UI_TEXT_LENGTH);
+	/*TODO
+	d->font_police = font_police;
+	d->font_style  = font_style;
+	*/
+	d->font_size   = font_size;
+	l->data = d;
+	l->draw = uiLabelDraw;
+	return l;
+}
 static void uiPanelDraw(uiEntity *self){
 	float *color = uiWindowGetColor(UI_PANEL_COLOR,UI_NORMAL_COLOR);
 	float x = uiEntityGetPosX(self);
 	float y = uiEntityGetPosY(self);
 	float z = uiEntityGetPosZ(self);
-	glDisable(GL_TEXTURE_RECTANGLE_ARB);
 	glColor4f(0,0,0,0.3);
 	uiRectDraw(x+3,y-3,z-0.1,self->sizex,self->sizey);
 	glColor4f(color[0],color[1],color[2],color[3]);
@@ -124,8 +171,8 @@ static int uiPanelMotion(uiEntity *self,float x, float y, float p){
 	}
 	return 0;
 }
-uiEntity *uiPanelNew(char *name, uiEntity *parent){
-	uiEntity *p = uiEntityNew(name,UI_ENT_PANEL,parent);
+uiEntity *uiPanelNew(char *name){
+	uiEntity *p = uiEntityNew(name,UI_ENT_PANEL);
 	uiEntitySetSize(p,150,120);
 	p->draw = uiPanelDraw;
 	p->motion = uiPanelMotion;
@@ -167,7 +214,6 @@ static void uiSliderDraw(uiEntity *self){
 	float margin = 3.0;
 
 	uiSliderData *sd = (uiSliderData*)self->data;
-	glDisable(GL_TEXTURE_RECTANGLE_ARB);
 	glColor4f(0,0,0,0.2);
 	uiRectDraw(x+3,y-3,z-0.1,self->sizex,self->sizey);
 	glColor4f(color[0],color[1],color[2],color[3]);
@@ -209,7 +255,6 @@ static void uiSliderDraw(uiEntity *self){
 }
 
 uiEntity *uiSliderNew(char *name,
-		uiEntity *parent, 
 		int id,
 		float min_value,
 		float max_value,
@@ -217,7 +262,7 @@ uiEntity *uiSliderNew(char *name,
 		float *dest_value,
 		void(*slide)(uiEntity *self, float value, int id)){
 	uiSliderData *sd = (uiSliderData*)malloc(sizeof(uiSliderData));
-	uiEntity *b = uiEntityNew(name,UI_ENT_SLIDER,parent);
+	uiEntity *b = uiEntityNew(name,UI_ENT_SLIDER);
 	uiEntitySetSize(b,60,16);
 	sd->id = id;
 	sd->slide = slide;
@@ -244,7 +289,6 @@ static void uiColorDraw(uiEntity *self){
 	float x = uiEntityGetPosX(self);
 	float y = uiEntityGetPosY(self);
 	float z = uiEntityGetPosZ(self);
-	glDisable(GL_TEXTURE_RECTANGLE_ARB);
 	glColor4f(color[0],color[1],color[2],color[3]);
 	uiRectDraw(x,y,z,self->sizex/2,self->sizey/2);
 	uiRectDraw(	x+self->sizex/2, y+self->sizey/2,z,
@@ -254,8 +298,8 @@ static void uiColorDraw(uiEntity *self){
 	uiRectDraw(x,y+self->sizey/2,z,self->sizex/2,self->sizey/2);
 }
 
-uiEntity *uiColorNew(char *name, uiEntity *parent,float *color){
-	uiEntity *c = uiEntityNew(name,UI_ENT_COLOR,parent);
+uiEntity *uiColorNew(char *name, float *color){
+	uiEntity *c = uiEntityNew(name,UI_ENT_COLOR);
 	uiEntitySetSize(c,32,32);
 	c->data = color;
 	c->draw = uiColorDraw;

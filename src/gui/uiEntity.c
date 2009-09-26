@@ -2,13 +2,16 @@
 #include <stdio.h>
 #include <string.h>
 #include "uiCore.h"
+#include "uiIterator.h"
 
 #define UI_MAX_ENTITY 1000
 
-static int ent_count;
-static uiEntity *ent_list[UI_MAX_ENTITY];
+static int ent_count = 0;
+static uiEntity *ent_over;
 static uiEntity *ent_active;
+static uiEntity *ent_screen;	/* The root entity that is currently drawn */
 
+/*
 static int entity_z_compare(const void *a, const void *b){
 	uiEntity *ea = *(uiEntity**)a;
 	uiEntity *eb = *(uiEntity**)b;
@@ -21,65 +24,79 @@ static int entity_z_compare(const void *a, const void *b){
 	}else{
 		return 1;
 	}
-}
+}*/
 
-void uiEntityDrawAll(void){
-	int i = 0;
-	qsort(ent_list,ent_count,sizeof(uiEntity*),entity_z_compare);
-	while (i < UI_MAX_ENTITY){
-		if(ent_list[i] && ent_list[i]->alive && ent_list[i]->draw){
-			ent_list[i]->draw(ent_list[i]);
+static void uiEntityDraw(uiEntity *e){
+	uiNode *n;
+	if(e->draw){
+		e->draw(e);
+	}
+	if(e->child){
+		n = e->child->first;
+		while(n){
+			uiEntityDraw((uiEntity*)n->data);
+			n = n->next;
 		}
-		i++;
 	}
 }
-void uiEntityAdd(uiEntity*ent){
-	int i = 0;
-	if(ent_count >= UI_MAX_ENTITY){
-		printf("ERROR : ui_entity_add() : max ui entity count reached\n");
-	
-	}
-	while(i < UI_MAX_ENTITY){
-		if(!ent_list[i]){
-			ent_list[i] = ent;
-			ent_count++;
-			return;
-		}
-		i++;
+void uiEntityDrawAll(){
+	if(ent_screen){
+		uiEntityDraw(ent_screen);
 	}
 }
+void uiEntityAdd(uiEntity*ent, uiEntity*parent){
+	if(!parent->child){
+		parent->child = uiListNew();
+	}
+	ent->parent = parent;
+	uiListAdd(parent->child,ent);
+	ent->visible = 1;
+	ent_count++;
+}
+void uiScreenSet(uiEntity *ent){
+	if(ent->type == UI_ENT_SCREEN){
+		ent_screen = ent;
+		ent->alive = 1;
+		ent->visible = 1;
+	}else{
+		printf("WARNING : Cannot set non-screen entity as current screen\n");
+	}
+}
+static void uiEntityClean(uiEntity *ent){
+	uiNode *n;
+	if(ent->child){
+		n = ent->child->first;
+		while(n){
+			uiEntityClean((uiEntity*)n->data);
+			n = n->next;
+		}
+	}
+	if(!ent->alive){	/*TODO this is very ugly */
+		if(ent->parent && ent->parent->child){
+			uiListRemove(ent->parent->child,ent);
+		}
+		uiEntityFree(ent);
+		ent_count--;
+	}
+}
+		
 void uiEntityCleanAll(void){
-	int i = 0;
-	while(i < UI_MAX_ENTITY){
-		if(ent_list[i] && !ent_list[i]->alive){
-			uiEntityFree(ent_list[i]);
-			ent_list[i] = NULL;
-			ent_count--;
-		}
-		i++;
+	if(ent_screen){
+		uiEntityClean(ent_screen);
 	}
 }
-uiEntity * uiEntityNew(const char *name, int type, uiEntity *parent){
+uiEntity * uiEntityNew(const char *name, int type ){
 	uiEntity *ent = (uiEntity*)malloc(sizeof(uiEntity));
 	memset(ent,0,sizeof(uiEntity));
 	ent->type = type;
 	strncpy(ent->name,name,UI_NAME_LENGTH);
 	ent->alive = 1;
-	if(parent){
-		ent->parent = parent;
-		ent->posx = 0;
-		ent->posy = 0;
-		ent->sizex = 32.0;
-		ent->sizey = 24.0;
-		ent->posz =  1.0;
-	}else{
-		ent->parent = NULL;
-		ent->posx = 0.0;
-		ent->posy = 0.0;
-		ent->sizex = 32.0;
-		ent->sizey = 24.0;
-		ent->posz = 0.0;
-	}
+	ent->parent = NULL;
+	ent->posx = 0.0;
+	ent->posy = 0.0;
+	ent->sizex = 32.0;
+	ent->sizey = 24.0;
+	ent->posz = 0.0;
 	return ent;
 }
 float uiEntityGetPosX(uiEntity *ent){
@@ -167,31 +184,83 @@ static int onEntity(uiEntity *ent, float posx, float posy){
 		return 0;
 	}
 }
-uiEntity *uiEntityPick(float posx, float posy){
-	int i = UI_MAX_ENTITY;
-	uiEntity *ent;
-	while(i--){
-		if((ent = ent_list[i]) && onEntity(ent,posx,posy)){
-			return ent;
-		}
+/*picks the closest entity that */
+static uiEntity *uiEntityPickEnt(uiEntity *ent, float posx, float posy){
+	uiNode *n = NULL;
+	uiEntity *tmp = NULL;
+	if(!ent || !ent->visible || !onEntity(ent,posx,posy)){
+		return NULL;
 	}
-	return NULL;
+	if(!ent->child){
+		return ent;
+	}
+	n = ent->child->first;
+	while(n){	/*if a child can be picked we return that child */
+		if((tmp = uiEntityPickEnt((uiEntity*)n->data,posx,posy))){
+			return tmp;
+		}
+		n = n->next;
+	}
+	return ent;
 }
-void uiEventMouseButton(int button,int down, float x, float y, float pressure){
-	int i = UI_MAX_ENTITY;
-	uiEntity *ent;
-	while(i--){
-		if( (ent = ent_list[i]) && onEntity(ent,x,y) && ent->click){
+uiEntity *uiEntityPick(float posx, float posy){
+	return uiEntityPickEnt(ent_screen,posx,posy);
+}
+void uiEventMouseButton(int button, int down, float x, float y, float pressure){
+	uiEntity *ent = uiEntityPick(x,y);
+	printf("click...\n");
+	while(ent){
+		printf("ent: %s\n",ent->name);
+		if(ent->click){
 			if(!ent->click(ent,button,down,x,y,pressure)){
 				return;
 			}
 		}
+		ent = ent->parent;
+	}
+}
+static void uiEntitySetMouseOver(uiEntity *ent, int value){
+	while(ent){
+		ent->mouseover = value;
+		ent = ent->parent;
 	}
 }
 void uiEventMouseMotion(float x, float y, float pressure){
+	uiEntity *ent = uiEntityPick(x,y);
+	/*setting mouse over status to entities */
+	if(ent != ent_over){
+		uiEntitySetMouseOver(ent_over,0);
+		ent_over = ent;
+	}
+	uiEntitySetMouseOver(ent,1);
+	/* if an entity is beeing dragged, it grabs the focus.
+	 */
+	if((uiStateMouse(UI_MOUSE_BUTTON_1) || uiStateMouse(UI_MOUSE_BUTTON_2))
+			&& ent_active && ent_active->motion){
+		ent_active->motion(ent_active,x,y,pressure);
+		return;
+	}
+	ent_active = NULL;
+	/* sending mouse over event to ents when not dragging */
+	while(ent){
+		if(ent->motion){
+			if(!ent->motion(ent,x,y,pressure)){
+				ent_active = ent;
+				return;
+			}
+		}
+		ent = ent->parent;
+	}
+}
+	
+
+
+	
+	/*
+void uiEventMouseMotion(float x, float y, float pressure){
 	int i = UI_MAX_ENTITY;
 	uiEntity *ent;
-	if(uiStateMouse(UI_MOUSE_BUTTON_1) || uiStateMouse(UI_MOUSE_BUTTON_2)){
+	if(uiStateMouse(UI_MOUSE_BUTTON_1) || uiStateMouse(UI_MOUSE_BUTTON_2))
 		if(ent_active && ent_active->motion){
 			ent_active->motion(ent_active,x,y,pressure);
 			return;
@@ -214,7 +283,8 @@ void uiEventMouseMotion(float x, float y, float pressure){
 			}
 		}
 	}
-}
+	return;
+}*/
 
 
 
