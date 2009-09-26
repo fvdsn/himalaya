@@ -7,8 +7,10 @@
 #define UI_MAX_ENTITY 1000
 
 static int ent_count = 0;
-static uiEntity *ent_over;
-static uiEntity *ent_active;
+static uiEntity *ent_over;	/*the mouse is over that entity */
+static uiEntity *ent_active;	/* if not null, all events go trough that 
+				   entity even if the mouse is not over.
+				  */
 static uiEntity *ent_screen;	/* The root entity that is currently drawn */
 
 /*
@@ -227,21 +229,27 @@ static void uiEntitySetMouseOver(uiEntity *ent, int value){
 }
 void uiEventMouseMotion(float x, float y, float pressure){
 	uiEntity *ent = uiEntityPick(x,y);
-	/*setting mouse over status to entities */
+	/* if an entity is beeing dragged, it grabs the focus.
+	 */
+	if((uiStateMouse(UI_MOUSE_BUTTON_1) || uiStateMouse(UI_MOUSE_BUTTON_2))
+			&& ent_active && ent_active->motion){
+		uiEntitySetMouseOver(ent_active,1);
+		ent_active->motion(ent_active,x,y,pressure);
+		return;
+	}
+	/*there is no dragging : we remove the active entity, and change
+	 * the mouse over status*/
+	if(ent_active){
+		uiEntitySetMouseOver(ent_active,0);
+		ent_active = NULL;
+	}
 	if(ent != ent_over){
 		uiEntitySetMouseOver(ent_over,0);
 		ent_over = ent;
 	}
 	uiEntitySetMouseOver(ent,1);
-	/* if an entity is beeing dragged, it grabs the focus.
-	 */
-	if((uiStateMouse(UI_MOUSE_BUTTON_1) || uiStateMouse(UI_MOUSE_BUTTON_2))
-			&& ent_active && ent_active->motion){
-		ent_active->motion(ent_active,x,y,pressure);
-		return;
-	}
-	ent_active = NULL;
-	/* sending mouse over event to ents when not dragging */
+
+	/* sending mouse over event*/
 	while(ent){
 		if(ent->motion){
 			if(!ent->motion(ent,x,y,pressure)){
@@ -252,9 +260,6 @@ void uiEventMouseMotion(float x, float y, float pressure){
 		ent = ent->parent;
 	}
 }
-	
-
-
 	
 	/*
 void uiEventMouseMotion(float x, float y, float pressure){

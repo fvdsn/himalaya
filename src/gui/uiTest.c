@@ -63,7 +63,6 @@ int main(int argc, char **argv){
 	uiEntitySetPos(e,80,50);
 	uiEntitySetSize(e,60,60);
 	uiEntityAdd(e,p);
-	
 
 	uiMainLoop();
 	return 0;
