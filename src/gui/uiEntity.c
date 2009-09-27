@@ -1,6 +1,8 @@
 #include <stdlib.h> 
 #include <stdio.h>
 #include <string.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
 #include "uiCore.h"
 #include "uiIterator.h"
 
@@ -30,6 +32,8 @@ static int entity_z_compare(const void *a, const void *b){
 
 static void uiEntityDraw(uiEntity *e){
 	uiNode *n;
+	glPushMatrix();
+	glTranslatef(e->posx,e->posy,1.0f);
 	if(e->draw){
 		e->draw(e);
 	}
@@ -40,6 +44,7 @@ static void uiEntityDraw(uiEntity *e){
 			n = n->next;
 		}
 	}
+	glPopMatrix();
 }
 void uiEntityDrawAll(){
 	if(ent_screen){
@@ -289,7 +294,6 @@ void uiEventMouseMotion(float x, float y, float pressure){
 		}
 	}
 	return;
-}*/
-
-
+}
+*/
 

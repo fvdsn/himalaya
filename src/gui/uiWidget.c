@@ -20,9 +20,9 @@ static void uiRectDraw(float x, float y, float z,float sx, float sy){
 	glEnd();
 }
 static void uiTextureDraw(uiEntity *self){
-	float x = uiEntityGetPosX(self) + self->tex_posx;
-	float y = uiEntityGetPosY(self) + self->tex_posy;
-	float z = uiEntityGetPosZ(self) + 0.1;
+	float x = self->tex_posx;
+	float y = self->tex_posy;
+	float z = 0.1;
 	float sx = self->tex_sizex;
 	float sy = self->tex_sizey;
 	if(!self->tex){
@@ -44,11 +44,10 @@ static void uiTextureDraw(uiEntity *self){
 static void uiButtonDraw(uiEntity *self){
 	cairo_surface_t *surface;
 	cairo_t *cr;
-
 	float *color = uiWindowGetColor(UI_ITEM_COLOR,UI_NORMAL_COLOR);
-	float x = uiEntityGetPosX(self);
-	float y = uiEntityGetPosY(self);
-	float z = uiEntityGetPosZ(self);
+	float x = 0; 
+	float y = 0;
+	float z = 0;
 	glColor4f(0,0,0,0.2);
 	uiRectDraw(x+3,y-3,z-0.1,self->sizex,self->sizey);
 	if(self->mouseover){
@@ -111,9 +110,9 @@ uiEntity *uiButtonNew(char *name,
 }
 static void uiLabelDraw(uiEntity *self){
 	uiLabelData *d = (uiLabelData*)self->data;
-	float x = uiEntityGetPosX(self);
-	float y = uiEntityGetPosY(self);
-	float z = uiEntityGetPosZ(self);
+	float x = 0;
+	float y = 0;
+	float z = 0;
 	uiTextDraw(x,y,z+0.1,
 			d->font_size,
 			uiWindowGetFont(d->font_police,d->font_style),
@@ -154,9 +153,9 @@ uiEntity *uiCairoLabelNew(char *name, const char *text, const float *color,
 }
 static void uiPanelDraw(uiEntity *self){
 	float *color = uiWindowGetColor(UI_PANEL_COLOR,UI_NORMAL_COLOR);
-	float x = uiEntityGetPosX(self);
-	float y = uiEntityGetPosY(self);
-	float z = uiEntityGetPosZ(self);
+	float x = 0;
+	float y = 0;
+	float z = 0;
 	glColor4f(0,0,0,0.3);
 	uiRectDraw(x+3,y-3,z-0.1,self->sizex,self->sizey);
 	glColor4f(color[0],color[1],color[2],color[3]);
@@ -208,9 +207,9 @@ static void uiSliderDraw(uiEntity *self){
 	float bgcol[4] = {0.0,0.0,0.0,0.2};
 	float barcol[4] = {0.3,0.3,0.3,1.0};
 	float active[4] = {1.0,0.2,0,1.0};
-	float x = uiEntityGetPosX(self);
-	float y = uiEntityGetPosY(self);
-	float z = uiEntityGetPosZ(self);
+	float x = 0;
+	float y = 0;
+	float z = 0;
 	float margin = 3.0;
 
 	uiSliderData *sd = (uiSliderData*)self->data;
@@ -286,9 +285,9 @@ uiEntity *uiSliderNew(char *name,
 }
 static void uiColorDraw(uiEntity *self){
 	float *color = (float*)self->data;
-	float x = uiEntityGetPosX(self);
-	float y = uiEntityGetPosY(self);
-	float z = uiEntityGetPosZ(self);
+	float x = 0;
+	float y = 0;
+	float z = 0;
 	glColor4f(color[0],color[1],color[2],color[3]);
 	uiRectDraw(x,y,z,self->sizex/2,self->sizey/2);
 	uiRectDraw(	x+self->sizex/2, y+self->sizey/2,z,
