@@ -42,7 +42,6 @@ typedef struct slider_data{
 	void (*slide)(uiEntity*self, float value, int id);
 }uiSliderData;
 
-uiEntity *uiPanelNew(char *name);
 
 uiEntity *uiSliderNew(char *name,
 		int id,
@@ -52,5 +51,19 @@ uiEntity *uiSliderNew(char *name,
 		float *dest_value,
 		void (*slide)(uiEntity*self,float value,int id));
 
+uiEntity *uiPanelNew(char *name);
 uiEntity *uiColorNew(char *name,float *color);
 
+uiEntity *uiTabEnvNew(char *name);
+uiEntity *uiTabNew(char *name);
+void uiTabAdd(uiEntity *tabenv, uiEntity *tab);
+
+typedef struct region_data{
+	float inner_sizex;
+	float inner_sizey;
+	float dx;
+	float dy;
+}uiRegionData;
+
+uiEntity *uiRegionNew(char *name,float inner_sx, float inner_sy);
+uiEntity *uiRectNew(char *name,float sx, float sy, float r, float g, float b);

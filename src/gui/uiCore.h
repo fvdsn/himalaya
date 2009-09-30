@@ -13,6 +13,7 @@ typedef struct uiState_s uiState;
 
 enum ui_entity_type{
 	UI_ENT_SCREEN,
+	UI_ENT_RECT,
 	UI_ENT_PANEL,
 	UI_ENT_BUTTON,
 	UI_ENT_SLIDER,
@@ -21,15 +22,19 @@ enum ui_entity_type{
 	UI_ENT_LABEL,
 	UI_ENT_CAIROLABEL,
 	UI_ENT_REGION,
-	UI_ENT_TABS,
-	UI_ENT_TAB
+	UI_ENT_TABENV,
+	UI_ENT_TABBUT,
+	UI_ENT_TAB,
 };
 
-#define ALIGN_CENTER 0
-#define ALIGN_LEFT -1
-#define ALIGN_RIGHT 1
-#define ALIGN_TOP 1
-#define ALIGN_BOTTOM -1
+enum ui_align{
+	UI_ALIGN_FIXED,
+	UI_ALIGN_CENTER,
+	UI_ALIGN_NORTH,
+	UI_ALIGN_EAST,
+	UI_ALIGN_SOUTH,
+	UI_ALIGN_WEST
+};
 
 struct uiEntity_s{
 	char name[UI_NAME_LENGTH];
@@ -55,15 +60,20 @@ struct uiEntity_s{
 	float posz;
 	float sizex;
 	float sizey;
+	float color[4];
 
 	/*flow and alignment*/
 	float margin_out;	/* outer margin in pixel */
 	float margin_in;	/* inner margin in pixel */
-	int align;		/* the particle align itselfs */
-	int align_x;		/* horizontal alignement */
-	int align_y;		/* vertical alignment    */
-	uiEntity *flow;		/* if not null the entity will 
-				   align to this one */
+	
+	int resizable_x;
+	float rel_sizex;
+	
+	int resizable_y;
+	float rel_sizey;
+
+	int align; /* N,E,S,W */
+	
 
 	/*texture*/
 	float  	tex_posx;	/*display offset of the texture */
@@ -90,6 +100,7 @@ void 	uiEntitySetSize(uiEntity *ent, float sizex, float sizey);
 void    uiEntityFree(uiEntity *ent);
 void 	uiEntityCleanAll(void);
 void 	uiEntityDrawAll(void);
+void 	uiEntityLayoutAll(void);
 void 	uiEntityAdd(uiEntity*ent,uiEntity *parent);
 float 	uiEntityGetPosX(uiEntity *ent);
 float 	uiEntityGetPosY(uiEntity *ent);
@@ -177,20 +188,6 @@ enum color_modifier{
 float *uiWindowGetColor(int type, int modifier);
 int  uiWindowGetSizeX(void);
 int  uiWindowGetSizeY(void);
-
-enum font_face{
-	UI_FONT_SANS,
-	UI_FONT_MONO,
-	UI_FONT_FACE_COUNT
-};
-enum font_type{
-	UI_FONT_NORMAL,
-	UI_FONT_BOLD,
-	UI_FONT_ITALIC,
-	UI_FONT_BOLD_ITALIC,
-	UI_FONT_TYPE_COUNT
-};
-uiFont *uiWindowGetFont(int face, int type);
 void uiWindowDrawBegin(void);
 void uiWindowDrawEnd(void);
 void uiNewWindow(const char *name, int sizex, int sizey);

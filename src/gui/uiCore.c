@@ -87,6 +87,7 @@ void uiMainLoop(void){
 		uiEventProcess();
 		uiEntityCleanAll();
 		uiWindowDrawBegin();
+		uiEntityLayoutAll();
 		uiEntityDrawAll();
 		uiWindowDrawEnd();
 		SDL_Delay(uiTimeLeft());

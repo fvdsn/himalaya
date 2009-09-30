@@ -15,33 +15,105 @@ static uiEntity *ent_active;	/* if not null, all events go trough that
 				  */
 static uiEntity *ent_screen;	/* The root entity that is currently drawn */
 
-/*
-static int entity_z_compare(const void *a, const void *b){
-	uiEntity *ea = *(uiEntity**)a;
-	uiEntity *eb = *(uiEntity**)b;
-	float za = uiEntityGetPosZ(ea);
-	float zb = uiEntityGetPosZ(eb);
-	if( za < zb){
-		return -1;
-	}else if (za == zb){
-		return 0;
-	}else{
-		return 1;
+static void uiEntityLayout(uiEntity *e){
+	uiNode *n;
+	uiEntity *c;
+	float px,py,sx,sy,posx,posy,sizex,sizey;
+	posx = e->margin_in;
+	posy = e->margin_in;
+	sizex = e->sizex - 2* e->margin_in;
+	sizey = e->sizey - 2* e->margin_in;
+	/* those vars represent the free zone where we can align entities.
+	 * that zone is shrunk when a new child entity is aligned
+	 * fixed and centered entities don't take space
+	 */
+	px = posx;
+	py = posy;
+	sx = sizex;
+	sy = sizey;
+	if(e->child){
+		n = e->child->first;
+		while(n){
+			c = (uiEntity*)n->data;
+			/*we resize the entity to fit the available space*/
+			if(c->resizable_x){
+				c->sizex = sx*c->rel_sizex;
+				if(c->sizex > 2*c->margin_out){
+					c->sizex -= 2*c->margin_out;
+				}
+				c->posx = px + c->margin_out;
+			}
+			if(c->resizable_y){
+				c->sizey = sy*c->rel_sizey;
+				if(c->sizey > 2*c->margin_out){
+					c->sizey -= 2*c->margin_out;
+				}
+				c->posy = px + c->margin_out;
+			}
+			/*position the entity depending on where to align */
+			switch(c->align){
+				case UI_ALIGN_NORTH:
+					c->posy = py + sy - c->sizey - 2*c->margin_out;
+					sy -= c->sizey + 2*c->margin_out;
+					break;
+				case UI_ALIGN_EAST:
+					c->posx = px + sx - c->sizex - 2*c->margin_out;
+					sx -= c->sizex + 2*c->margin_out;
+					break;
+				case UI_ALIGN_SOUTH:
+					c->posy = py + c->margin_out;
+					sy -= c->sizey + 2*c->margin_out;
+					break;
+				case UI_ALIGN_WEST:
+					c->posx = px + c->margin_out;
+					sx -= c->sizex + 2*c->margin_out;
+					break;
+				default: 
+					/*TODO UI_ALIGN_CENTER*/
+					break;
+			}
+			uiEntityLayout(c);
+			n = n->next;
+		}
 	}
-}*/
-
+}
+void uiEntityLayoutAll(){
+	if(ent_screen){
+		ent_screen->sizex = uiWindowGetSizeX();
+		ent_screen->sizey = uiWindowGetSizeY();
+		ent_screen->posx = 0;
+		ent_screen->posy = 0;
+		uiEntityLayout(ent_screen);
+	}
+}
 static void uiEntityDraw(uiEntity *e){
+	float x,y;
 	uiNode *n;
 	glPushMatrix();
 	glTranslatef(e->posx,e->posy,1.0f);
 	if(e->draw){
 		e->draw(e);
 	}
-	if(e->child){
-		n = e->child->first;
-		while(n){
-			uiEntityDraw((uiEntity*)n->data);
-			n = n->next;
+	if(e->type == UI_ENT_REGION){
+		if(e->child){
+			x = uiEntityGetPosX(e);
+			y = uiEntityGetPosY(e);
+			n = e->child->first;
+			while(n){
+				glScissor(x,y,e->sizex,e->sizey);
+				glEnable(GL_SCISSOR_TEST);
+				uiEntityDraw((uiEntity*)n->data);
+				glDisable(GL_SCISSOR_TEST);
+				n = n->next;
+			}
+		}
+	}else{
+		if(e->child){
+			n = e->child->first;
+			while(n){
+				uiEntityDraw((uiEntity*)n->data);
+				n = n->next;
+			}
 		}
 	}
 	glPopMatrix();
@@ -265,35 +337,4 @@ void uiEventMouseMotion(float x, float y, float pressure){
 		ent = ent->parent;
 	}
 }
-	
-	/*
-void uiEventMouseMotion(float x, float y, float pressure){
-	int i = UI_MAX_ENTITY;
-	uiEntity *ent;
-	if(uiStateMouse(UI_MOUSE_BUTTON_1) || uiStateMouse(UI_MOUSE_BUTTON_2))
-		if(ent_active && ent_active->motion){
-			ent_active->motion(ent_active,x,y,pressure);
-			return;
-		}
-	}else{
-		ent_active = NULL;
-	}
-	while(i--){
-		if( (ent = ent_list[i])){
-			if(onEntity(ent,x,y)){
-				ent->mouseover = 1;
-				if(ent->motion){
-					if(!ent->motion(ent,x,y,pressure)){
-						ent_active = ent;
-						return;
-					}
-				}
-			}else{
-				ent->mouseover = 0;
-			}
-		}
-	}
-	return;
-}
-*/
 

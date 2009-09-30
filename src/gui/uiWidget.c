@@ -113,11 +113,11 @@ static void uiLabelDraw(uiEntity *self){
 	float x = 0;
 	float y = 0;
 	float z = 0;
-	uiTextDraw(x,y,z+0.1,
+	/*uiTextDraw(x,y,z+0.1,
 			d->font_size,
 			uiWindowGetFont(d->font_police,d->font_style),
 			d->font_color,
-			d->text);
+			d->text);*/
 }
 uiEntity *uiLabelNew(char *name, const char *text, const float *color,
 		int font_police, int font_style, float font_size){
@@ -304,6 +304,107 @@ uiEntity *uiColorNew(char *name, float *color){
 	c->draw = uiColorDraw;
 	return c;
 }
+#define SLIDER_WIDTH 10
+#define SLIDER_MARGIN 2
+#define SLIDER_Z 10
+static void uiRegionDraw(uiEntity *self){
+	uiRegionData *rd = (uiRegionData*)self->data;
+	glColor4f(0.45,0.45,0.45,1);
+	uiRectDraw(0,0,0,self->sizex,self->sizey);
+	/*vertical slider */
+	glEnable(GL_DEPTH_TEST);
+	if(rd->dy < 0 || rd->dy + rd->inner_sizey > self->sizey){
+		/*we need to draw a slider */
+		/*draw the slider background */
+		float px = self->sizex - SLIDER_WIDTH - SLIDER_MARGIN;
+		float py = SLIDER_MARGIN;
+		float sy = self->sizey - (2*SLIDER_MARGIN);
+		if(sy <0){ sy = 0;}
+		glColor4f(0.4,0.4,0.4,1);
+		uiRectDraw(px,py,SLIDER_Z,SLIDER_WIDTH,sy);
+		/*draw the slider handle */
+		if(rd->inner_sizey > 0){
+			float handle_sy = sy * self->sizey / rd->inner_sizey;
+			float handle_py  = rd->dy *self->sizey / rd->inner_sizey;
+			glColor4f(0.5,0.5,0.5,1);
+			uiRectDraw(px,handle_py+SLIDER_MARGIN,SLIDER_Z+0.1,SLIDER_WIDTH,handle_sy);
+		}
+	}
+	/*horizontal slider */
+	if(rd->dx < 0 || rd->dx + rd->inner_sizex > self->sizex){
+		/*we need to draw a slider */
+		/*draw the slider background */
+		float py = SLIDER_MARGIN;
+		float px = SLIDER_MARGIN;
+		float sx = self->sizex - (2*SLIDER_MARGIN);
+		if(sx <0){ sx = 0;}
+		glColor4f(0.4,0.4,0.4,1);
+		uiRectDraw(px,py,SLIDER_Z,sx,SLIDER_WIDTH);
+		/*draw the slider handle */
+		if(rd->inner_sizex > 0){
+			float handle_sx = sx * self->sizex / rd->inner_sizex;
+			float handle_px  = rd->dx *self->sizex / rd->inner_sizex;
+			glColor4f(0.5,0.5,0.5,1);
+			uiRectDraw(handle_px+SLIDER_MARGIN,py,SLIDER_Z+0.1,handle_sx,SLIDER_WIDTH);
+		}
+	}
+	glDisable(GL_DEPTH_TEST);
+	glTranslatef(rd->dx,rd->dy,0);
+	
+}
 
-
+static int uiRegionMotion(uiEntity *self,float x, float y, float p){
+	float dx,dy;
+	uiRegionData *rd = (uiRegionData*)self->data;
+	if(uiStateMouse(UI_MOUSE_BUTTON_1)){
+		uiStateMouseDelta(&dx,&dy,NULL);
+		if(self->sizex < rd->inner_sizex){
+			if(rd->dx + dx < 0){
+				rd->dx = 0;
+			}else if(rd->dx + dx + self->sizex > rd->inner_sizex){
+				rd->dx = rd->inner_sizex - self->sizex;
+			}else{
+				rd->dx += dx;
+			}
+		}
+		if(self->sizey < rd->inner_sizey){
+			if(rd->dy + dy < 0){
+				rd->dy = 0;
+			}else if(rd->dy + dy + self->sizey > rd->inner_sizey){
+				rd->dy = rd->inner_sizey = self->sizey;
+			}else{
+				rd->dy += dy;
+			}
+		}
+	}
+	return 0;
+}
+uiEntity *uiRegionNew(char *name,float inner_sizex, float inner_sizey){
+	uiEntity *r = uiEntityNew(name,UI_ENT_REGION);
+	uiRegionData *rd = (uiRegionData*)malloc(sizeof(uiRegionData));
+	rd->inner_sizex = inner_sizex;
+	rd->inner_sizey = inner_sizey;
+	rd->dx = 0;
+	rd->dy = 0;
+	uiEntitySetSize(r,100,100);
+	r->draw = uiRegionDraw;
+	r->data = rd;
+	r->motion = uiRegionMotion;
+	return r;
+}	
+static void uiRectEntDraw(uiEntity *self){
+	glColor4f(self->color[0],self->color[1],self->color[2],self->color[3]);
+	uiRectDraw(0,0,0,self->sizex,self->sizey);
+}
+uiEntity *uiRectNew(char *name, float sx, float sy, float red, float g, float b){
+	uiEntity *r = uiEntityNew(name,UI_ENT_RECT);
+	r->sizex = sx;
+	r->sizey = sy;
+	r->color[0] = red;
+	r->color[1] = g;
+	r->color[2] = b;
+	r->color[3] = 1;
+	r->draw = uiRectEntDraw;
+	return r;
+}
 
