@@ -54,21 +54,21 @@ static void uiEntityLayout(uiEntity *e){
 			switch(c->align){
 				case UI_ALIGN_NORTH:
 					c->posy = py + sy - c->sizey - 1*c->margin_out;
-					sy -= c->sizey + 2*c->margin_out;
+					sy -= c->sizey + 1*c->margin_out;
 					break;
 				case UI_ALIGN_EAST:
 					c->posx = px + sx - c->sizex - 1*c->margin_out;
-					sx -= c->sizex + 2*c->margin_out;
+					sx -= c->sizex + 1*c->margin_out;
 					break;
 				case UI_ALIGN_SOUTH:
 					c->posy = py + c->margin_out;
-					sy -= c->sizey + 2*c->margin_out;
-					py += c->sizey + 2*c->margin_out;
+					sy -= c->sizey + 1*c->margin_out;
+					py += c->sizey + 1*c->margin_out;
 					break;
 				case UI_ALIGN_WEST:
 					c->posx = px + c->margin_out;
-					sx -= c->sizex + 2*c->margin_out;
-					px += c->sizex + 2*c->margin_out;
+					sx -= c->sizex + 1*c->margin_out;
+					px += c->sizex + 1*c->margin_out;
 					break;
 				default: 
 					/*TODO UI_ALIGN_CENTER*/
@@ -200,6 +200,25 @@ float uiEntityGetPosZ(uiEntity *ent){
 		return ent->posz;
 	}else{
 		return uiEntityGetPosZ(ent->parent) + ent->posz;
+	}
+}
+void	uiEntityAlign(uiEntity *ent, enum ui_align dir){
+	ent->align = dir;
+}
+void 	uiEntityFitX(uiEntity *ent, float relsize){
+	ent->resizable_x = 1;
+	if(relsize < 0 || relsize > 1){
+		ent->rel_sizex = 1;
+	}else{
+		ent->rel_sizex = relsize;
+	}
+}
+void 	uiEntityFitY(uiEntity *ent, float relsize){
+	ent->resizable_y = 1;
+	if(relsize < 0 || relsize > 1){
+		ent->rel_sizey = 1;
+	}else{
+		ent->rel_sizey = relsize;
 	}
 }
 void	uiEntitySetPos(uiEntity *ent, float posx, float posy){

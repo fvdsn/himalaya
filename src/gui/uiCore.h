@@ -109,6 +109,9 @@ float 	uiEntityGetPosY(uiEntity *ent);
 float 	uiEntityGetPosZ(uiEntity *ent);
 float 	uiEntityGetSizeX(uiEntity *ent);
 float 	uiEntityGetSizeY(uiEntity *ent);
+void	uiEntityAlign(uiEntity *ent, enum ui_align dir);
+void 	uiEntityFitX(uiEntity *ent, float relsize);
+void 	uiEntityFitY(uiEntity *ent, float relsize);
 void	uiScreenSet(uiEntity *ent);
 
 void  	uiEntityMakeTexture(uiEntity *ent, int sizex, int sizey);
