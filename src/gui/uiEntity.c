@@ -94,6 +94,7 @@ static void uiEntityDraw(uiEntity *e){
 	if(e->draw){
 		e->draw(e);
 	}
+	glTranslatef(e->dx,e->dy,0.0f);
 	if(e->type == UI_ENT_REGION){
 		if(e->child){
 			x = uiEntityGetPosX(e);
@@ -182,14 +183,14 @@ float uiEntityGetPosX(uiEntity *ent){
 	if(ent->parent == NULL){
 		return ent->posx;
 	}else{
-		return uiEntityGetPosX(ent->parent) + ent->posx;
+		return uiEntityGetPosX(ent->parent) + ent->posx + ent->parent->dx;
 	}
 }
 float uiEntityGetPosY(uiEntity *ent){
 	if(ent->parent == NULL){
 		return ent->posy;
 	}else{
-		return uiEntityGetPosY(ent->parent) + ent->posy;
+		return uiEntityGetPosY(ent->parent) + ent->posy + ent->parent->dy;
 	}
 }
 float uiEntityGetPosZ(uiEntity *ent){

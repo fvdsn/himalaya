@@ -41,8 +41,8 @@ struct uiEntity_s{
 	int type;
 	int subtype;
 	int uid;
-	int alive;
-	int active;
+	int alive;	/*if not it should be freed asap*/
+	int active;	
 	int enabled;
 	uiEntity *parent;
 	uiList *child;
@@ -60,6 +60,8 @@ struct uiEntity_s{
 	float posz;
 	float sizex;
 	float sizey;
+	float dx;	/*positionning of the child widgets*/
+	float dy;
 	float color[4];
 
 	/*flow and alignment*/

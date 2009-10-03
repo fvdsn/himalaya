@@ -28,7 +28,7 @@ int main(int argc, char **argv){
 	uiEntitySetPos(l,100,50);
 	uiEntityAdd(l);
 	*/
-	r = uiRectNew("rect",25,100,1,0,1);
+	/*r = uiRectNew("rect",25,100,1,0,1);
 	uiEntitySetPos(r,250,50);
 	r->align = UI_ALIGN_NORTH;
 	r->resizable_x = 1;
@@ -51,11 +51,11 @@ int main(int argc, char **argv){
 	r->resizable_y = 1;
 	r->rel_sizey = 1;
 	r->margin_out = 5;
-	uiEntityAdd(r,s);
+	uiEntityAdd(r,s);*/
 
 	r = uiRegionNew("region",800,600);
 	uiEntitySetPos(r,50,50);
-	uiEntitySetSize(r,100,100);
+	uiEntitySetSize(r,500,400);
 	uiEntityAdd(r,s);
 
 	p = uiPanelNew("panel");
