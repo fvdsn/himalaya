@@ -48,7 +48,7 @@ static void uiEntityLayout(uiEntity *e){
 				if(c->sizey > 2*c->margin_out){
 					c->sizey -= 2*c->margin_out;
 				}
-				c->posy = px + c->margin_out;
+				c->posy = py + c->margin_out;
 			}
 			/*position the entity depending on where to align */
 			switch(c->align){
@@ -63,10 +63,12 @@ static void uiEntityLayout(uiEntity *e){
 				case UI_ALIGN_SOUTH:
 					c->posy = py + c->margin_out;
 					sy -= c->sizey + 2*c->margin_out;
+					py += c->sizey + 2*c->margin_out;
 					break;
 				case UI_ALIGN_WEST:
 					c->posx = px + c->margin_out;
 					sx -= c->sizex + 2*c->margin_out;
+					px += c->sizex + 2*c->margin_out;
 					break;
 				default: 
 					/*TODO UI_ALIGN_CENTER*/

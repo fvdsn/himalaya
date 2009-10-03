@@ -61,8 +61,6 @@ void uiTabAdd(uiEntity *tabenv, uiEntity *tab);
 typedef struct region_data{
 	float inner_sizex;
 	float inner_sizey;
-	float dx;
-	float dy;
 }uiRegionData;
 
 uiEntity *uiRegionNew(char *name,float inner_sx, float inner_sy);
