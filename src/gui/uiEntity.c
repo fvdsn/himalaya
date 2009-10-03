@@ -19,10 +19,10 @@ static void uiEntityLayout(uiEntity *e){
 	uiNode *n;
 	uiEntity *c;
 	float px,py,sx,sy,posx,posy,sizex,sizey;
-	posx = e->margin_in;
-	posy = e->margin_in;
-	sizex = e->sizex - 2* e->margin_in;
-	sizey = e->sizey - 2* e->margin_in;
+	posx = e->margin_in_west;
+	posy = e->margin_in_south;
+	sizex = e->sizex - e->margin_in_west - e->margin_in_east;
+	sizey = e->sizey - e->margin_in_south - e->margin_in_north;
 	/* those vars represent the free zone where we can align entities.
 	 * that zone is shrunk when a new child entity is aligned
 	 * fixed and centered entities don't take space
@@ -35,6 +35,10 @@ static void uiEntityLayout(uiEntity *e){
 		n = e->child->first;
 		while(n){
 			c = (uiEntity*)n->data;
+			if(!c->display){
+				n = n->next;
+				continue;
+			}
 			/*we resize the entity to fit the available space*/
 			if(c->resizable_x){
 				c->sizex = sx*c->rel_sizex;
@@ -91,6 +95,9 @@ void uiEntityLayoutAll(){
 static void uiEntityDraw(uiEntity *e){
 	float x,y;
 	uiNode *n;
+	if(!e->display){
+		return;
+	}
 	glPushMatrix();
 	glTranslatef(e->posx,e->posy,1.0f);
 	if(e->draw){
@@ -173,6 +180,8 @@ uiEntity * uiEntityNew(const char *name, int type ){
 	ent->type = type;
 	strncpy(ent->name,name,UI_NAME_LENGTH);
 	ent->alive = 1;
+	ent->active = 1;
+	ent->display = 1;
 	ent->parent = NULL;
 	ent->posx = 0.0;
 	ent->posy = 0.0;
@@ -202,6 +211,16 @@ float uiEntityGetPosZ(uiEntity *ent){
 		return uiEntityGetPosZ(ent->parent) + ent->posz;
 	}
 }
+void	uiEntityMousePos(uiEntity *ent, float *x, float *y,float *pressure){
+	float mx,my;
+	uiStateMousePos(&mx,&my,pressure);
+	if(x){
+		*x = mx - uiEntityGetPosX(ent);
+	}
+	if(y){
+		*y = my - uiEntityGetPosY(ent);
+	}
+}
 void	uiEntityAlign(uiEntity *ent, enum ui_align dir){
 	ent->align = dir;
 }
@@ -219,6 +238,27 @@ void 	uiEntityFitY(uiEntity *ent, float relsize){
 		ent->rel_sizey = 1;
 	}else{
 		ent->rel_sizey = relsize;
+	}
+}
+void	uiEntitySetMargin(uiEntity *ent, enum ui_margin side, float px){
+	switch(side){
+		case UI_MARGIN_NORTH:
+			ent->margin_in_north = px;
+			break;
+		case UI_MARGIN_EAST:
+			ent->margin_in_east  = px;
+			break;
+		case UI_MARGIN_SOUTH:
+			ent->margin_in_south = px;
+			break;
+		case UI_MARGIN_WEST:
+			ent->margin_in_west  = px;
+			break;
+		default:
+			ent->margin_in_north = px;
+			ent->margin_in_east  = px;
+			ent->margin_in_south = px;
+			ent->margin_in_west  = px;
 	}
 }
 void	uiEntitySetPos(uiEntity *ent, float posx, float posy){
@@ -313,7 +353,10 @@ void uiEventMouseButton(int button, int down, float x, float y, float pressure){
 	while(ent){
 		printf("ent: %s\n",ent->name);
 		if(ent->click){
-			if(!ent->click(ent,button,down,x,y,pressure)){
+			if(!ent->click(ent,button,down,
+					x - uiEntityGetPosX(ent),
+					y - uiEntityGetPosY(ent),
+					pressure)){
 				return;
 			}
 		}

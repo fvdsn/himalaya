@@ -7,7 +7,7 @@
 #include "uiCore.h"
 #include "uiWidget.h"
 
-static void uiRectDraw(float x, float y, float z,float sx, float sy){
+void uiRectDraw(float x, float y, float z,float sx, float sy){
 	glBegin(GL_QUADS);
 		glTexCoord2f(0.0,sy);
 		glVertex3f(x,		y,		z);

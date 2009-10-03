@@ -5,7 +5,7 @@
 #include <GL/glu.h>
 #include "uiCore.h"
 
-float bg_color[4] = {0.5,0.5,0.5,1.0};
+float bg_color[4] = {0.3,0.3,0.3,1.0};
 float font_color[4] = {0.0,0.0,0.0,1.0};
 float item_color[4] = {0.8,0.8,0.8,1.0};
 float panel_color[4] = {0.4,0.4,0.4,1.0};

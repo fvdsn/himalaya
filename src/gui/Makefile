@@ -18,7 +18,8 @@ SRCS	=	uiCore.c \
 			uiWidget.c \
 			uiTest.c \
 			uiState.c \
-			uiIterator.c
+			uiIterator.c \
+			uiTabWidget.c
 
 OBJS	=	$(SRCS:.c=.o)
 

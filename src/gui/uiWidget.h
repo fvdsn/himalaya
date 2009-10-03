@@ -56,7 +56,7 @@ uiEntity *uiColorNew(char *name,float *color);
 
 uiEntity *uiTabEnvNew(char *name);
 uiEntity *uiTabNew(char *name);
-void uiTabAdd(uiEntity *tabenv, uiEntity *tab);
+int uiTabAdd(uiEntity *tabenv, uiEntity *tab);
 
 typedef struct region_data{
 	float inner_sizex;
@@ -65,3 +65,4 @@ typedef struct region_data{
 
 uiEntity *uiRegionNew(char *name,float inner_sx, float inner_sy);
 uiEntity *uiRectNew(char *name,float sx, float sy, float r, float g, float b);
+void uiRectDraw(float x, float y, float z,float sx, float sy);

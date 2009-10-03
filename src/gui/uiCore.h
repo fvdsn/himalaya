@@ -35,6 +35,13 @@ enum ui_align{
 	UI_ALIGN_SOUTH,
 	UI_ALIGN_WEST
 };
+enum ui_margin{
+	UI_MARGIN_ALL,
+	UI_MARGIN_NORTH,
+	UI_MARGIN_EAST,
+	UI_MARGIN_SOUTH,
+	UI_MARGIN_WEST
+};
 
 struct uiEntity_s{
 	char name[UI_NAME_LENGTH];
@@ -42,7 +49,8 @@ struct uiEntity_s{
 	int subtype;
 	int uid;
 	int alive;	/*if not it should be freed asap*/
-	int active;	
+	int active;	/* TODO if is the active entity */
+	int display;	/* 0 do not draw or send event  */
 	int enabled;
 	uiEntity *parent;
 	uiList *child;
@@ -66,7 +74,10 @@ struct uiEntity_s{
 
 	/*flow and alignment*/
 	float margin_out;	/* outer margin in pixel */
-	float margin_in;	/* inner margin in pixel */
+	float margin_in_north;
+	float margin_in_east;
+	float margin_in_south;
+	float margin_in_west;
 	
 	int resizable_x;
 	float rel_sizex;
@@ -109,9 +120,11 @@ float 	uiEntityGetPosY(uiEntity *ent);
 float 	uiEntityGetPosZ(uiEntity *ent);
 float 	uiEntityGetSizeX(uiEntity *ent);
 float 	uiEntityGetSizeY(uiEntity *ent);
+void	uiEntityMousePos(uiEntity *ent, float *x, float *y,float *pressure);
 void	uiEntityAlign(uiEntity *ent, enum ui_align dir);
 void 	uiEntityFitX(uiEntity *ent, float relsize);
 void 	uiEntityFitY(uiEntity *ent, float relsize);
+void	uiEntitySetMargin(uiEntity *ent, enum ui_margin side, float px);
 void	uiScreenSet(uiEntity *ent);
 
 void  	uiEntityMakeTexture(uiEntity *ent, int sizex, int sizey);

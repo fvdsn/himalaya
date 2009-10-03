@@ -14,6 +14,8 @@ int main(int argc, char **argv){
 	uiEntity *l;
 	uiEntity *e;
 	uiEntity *s;
+	uiEntity *te;
+	uiEntity *t;
 	uiNewWindow("HelloWorld",600,400);
 	
 	s = uiScreenNew("Main Screen");
@@ -27,20 +29,41 @@ int main(int argc, char **argv){
 	l = uiLabelNew("label",NULL,"ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789",color2,UI_FONT_SANS,UI_FONT_NORMAL,12.0);
 	uiEntitySetPos(l,100,50);
 	uiEntityAdd(l);
-	*/
 	r = uiRectNew("rect",25,100,1,0,1);
 	uiEntitySetPos(r,250,50);
 	uiEntityAlign(r,UI_ALIGN_NORTH);
 	uiEntityFitX(r,1);
 	r->margin_out = 5;
 	uiEntityAdd(r,s);
+	*/
+
+	te = uiTabEnvNew("tabenv");
+	uiEntitySetPos(te,50,50);
+	uiEntitySetSize(te,128,128);
+	uiEntityFitX(te,1);
+	uiEntityAlign(te,UI_ALIGN_NORTH);
+	uiEntityAdd(te,s);
+	te->margin_out = 2;
+
+	t = uiButtonNew("tab_button",1,button_click);
+	uiEntitySetPos(t,20,20);
+	uiTabAdd(t,te);
+
+	t = uiButtonNew("tab_but2",1,button_click);
+	uiEntitySetPos(t,80,20);
+	uiTabAdd(t,te);
+
+	t = uiPanelNew("tab_panel2");
+	uiEntitySetPos(t,100,50);
+	uiTabAdd(t,te);
+
 	
 	r = uiRegionNew("region",800,600);
 	uiEntitySetPos(r,50,50);
 	uiEntitySetSize(r,500,400);
 	uiEntityFitX(r,1);
 	uiEntityFitY(r,1);
-	r->margin_out = 5;
+	r->margin_out = 2;
 	uiEntityAdd(r,s);
 
 	p = uiPanelNew("panel");
