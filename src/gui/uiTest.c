@@ -39,9 +39,10 @@ int main(int argc, char **argv){
 
 	te = uiTabEnvNew("tabenv");
 	uiEntitySetPos(te,50,50);
-	uiEntitySetSize(te,128,128);
-	uiEntityFitX(te,1);
-	uiEntityAlign(te,UI_ALIGN_NORTH);
+	uiEntitySetSize(te,200,128);
+	uiEntityFitY(te,1);
+	uiEntityFitX(te,0.3);
+	uiEntityAlign(te,UI_ALIGN_EAST);
 	uiEntityAdd(te,s);
 	te->margin_out = 2;
 
@@ -57,6 +58,11 @@ int main(int argc, char **argv){
 	uiEntitySetPos(t,100,50);
 	uiTabAdd(t,te);
 
+	t = uiLabelNew("tab_label","Yahhooo toutlemenode",10);
+	uiEntitySetPos(t,20,200);
+	uiEntitySetSize(t,50,50);
+	uiEntityFitX(t,1);
+	uiTabAdd(t,te);
 	
 	r = uiRegionNew("region",800,600);
 	uiEntitySetPos(r,50,50);

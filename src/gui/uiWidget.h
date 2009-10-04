@@ -7,14 +7,6 @@ typedef struct button_data{
 	void (*click)(uiEntity *self, int id);
 }uiButtonData;
 
-typedef struct label_data{
-	char text[UI_TEXT_LENGTH];
-	float font_color[4];
-	int   font_police;
-	int   font_style;
-	float   font_size;
-}uiLabelData;
-
 uiEntity *uiScreenNew(char *name);
 	
 uiEntity *uiButtonNew(char *name,
@@ -22,13 +14,6 @@ uiEntity *uiButtonNew(char *name,
 		void(*click)(uiEntity *self, int id));
 uiEntity *uiLabelNew(char *name, 
 		const char *text, 
-		const float *col,
-		int font_police,
-		int font_style,
-		float font_size);
-uiEntity *uiCairoLabelNew(char *name, 
-		const char *text,
-		const float *col,
 		float font_size);
 
 typedef struct slider_data{

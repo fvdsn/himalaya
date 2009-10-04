@@ -19,31 +19,13 @@ void uiRectDraw(float x, float y, float z,float sx, float sy){
 		glVertex3f(x,		y+sy,		z);
 	glEnd();
 }
-static void uiTextureDraw(uiEntity *self){
-	float x = self->tex_posx;
-	float y = self->tex_posy;
-	float z = 0.1;
-	float sx = self->tex_sizex;
-	float sy = self->tex_sizey;
-	if(!self->tex){
-		return;
-	}
-	glEnable(GL_TEXTURE_RECTANGLE_ARB);
-	glTexImage2D(	GL_TEXTURE_RECTANGLE_ARB,
-			0,
-			GL_RGBA,
-			self->tex_sizex,
-			self->tex_sizey,
-			0,
-			GL_BGRA,
-			GL_UNSIGNED_BYTE,
-			self->tex );
-	uiRectDraw(x,y,z,sx,sy);
-	glDisable(GL_TEXTURE_RECTANGLE_ARB);
+uiEntity *uiScreenNew(char *name){
+	uiEntity *s = uiEntityNew(name,UI_ENT_SCREEN);
+	uiEntitySetSize(s,10000,10000);
+	uiEntitySetPos(s,0,0);
+	return s;
 }
 static void uiButtonDraw(uiEntity *self){
-	cairo_surface_t *surface;
-	cairo_t *cr;
 	float *color = uiWindowGetColor(UI_ITEM_COLOR,UI_NORMAL_COLOR);
 	float x = 0; 
 	float y = 0;
@@ -56,26 +38,7 @@ static void uiButtonDraw(uiEntity *self){
 		glColor4f(color[0],color[1],color[2],color[3]);
 	}
 	uiRectDraw(x,y,z,self->sizex,self->sizey);
-	if(!self->tex){
-		printf("rendering texture\n");
-		self->tex = malloc(self->tex_sizex*self->tex_sizey*4);
-		memset(self->tex,0,self->tex_sizex*self->tex_sizey*4);
-		surface = cairo_image_surface_create_for_data((unsigned char*)self->tex,
-				CAIRO_FORMAT_ARGB32,
-				self->tex_sizex,
-				self->tex_sizey,
-				4*self->tex_sizex);
-		cr = cairo_create(surface);
-		cairo_select_font_face(cr,"sans",CAIRO_FONT_SLANT_NORMAL,
-						CAIRO_FONT_WEIGHT_NORMAL);
-		cairo_set_font_size(cr,10.0);
-		cairo_set_source_rgb(cr,0,0,0);
-		cairo_move_to(cr,5,11);
-		cairo_show_text(cr,self->name);
-		cairo_destroy(cr);
-		cairo_surface_finish(surface);
-	}
-	uiTextureDraw(self);
+	uiStringDraw(self->string,x,y,z,self->sizex,self->sizey);
 }
 static int uiButtonClick(uiEntity *self,int button, int down, float x, float y, float pressure){
 	uiButtonData *bd = (uiButtonData*)self->data;
@@ -84,12 +47,6 @@ static int uiButtonClick(uiEntity *self,int button, int down, float x, float y, 
 		bd->click(self,bd->id);
 	}
 	return 0;
-}
-uiEntity *uiScreenNew(char *name){
-	uiEntity *s = uiEntityNew(name,UI_ENT_SCREEN);
-	uiEntitySetSize(s,10000,10000);
-	uiEntitySetPos(s,0,0);
-	return s;
 }
 uiEntity *uiButtonNew(char *name,
 		int id,
@@ -102,52 +59,15 @@ uiEntity *uiButtonNew(char *name,
 	b->data = bd;
 	b->draw = uiButtonDraw;
 	b->click = uiButtonClick;
-	b->tex_posx = 0;
-	b->tex_posy = 0;
-	b->tex_sizex = b->sizex;
-	b->tex_sizey = b->sizey;
+	b->string = uiStringNew(name,10,60,16,5,11);
 	return b;
 }
 static void uiLabelDraw(uiEntity *self){
-	uiLabelData *d = (uiLabelData*)self->data;
-	float x = 0;
-	float y = 0;
-	float z = 0;
-	/*uiTextDraw(x,y,z+0.1,
-			d->font_size,
-			uiWindowGetFont(d->font_police,d->font_style),
-			d->font_color,
-			d->text);*/
+	uiStringDraw(self->string,0,0,0,self->sizex,self->sizey);	
 }
-uiEntity *uiLabelNew(char *name, const char *text, const float *color,
-		int font_police, int font_style, float font_size){
+uiEntity *uiLabelNew(char *name, const char *text,float font_size){
 	uiEntity *l = uiEntityNew(name,UI_ENT_LABEL);
-	uiLabelData *d = (uiLabelData*)malloc(sizeof(uiLabelData));
-	memset(d,0,sizeof(uiLabelData));
-	uiEntitySetSize(l,128,30);
-	memcpy(d->font_color,color,4*sizeof(float));
-	strncpy(d->text,text,UI_TEXT_LENGTH);
-	d->font_police = font_police;
-	d->font_style  = font_style;
-	d->font_size   = font_size;
-	l->data = d;
-	l->draw = uiLabelDraw;
-	return l;
-}
-uiEntity *uiCairoLabelNew(char *name, const char *text, const float *color,
-		float font_size){
-	uiEntity *l = uiEntityNew(name,UI_ENT_CAIROLABEL);
-	uiLabelData *d = (uiLabelData*)malloc(sizeof(uiLabelData));
-	memset(d,0,sizeof(uiLabelData));
-	uiEntitySetSize(l,128,30);
-	memcpy(d->font_color,color,4*sizeof(float));
-	strncpy(d->text,text,UI_TEXT_LENGTH);
-	/*TODO
-	d->font_police = font_police;
-	d->font_style  = font_style;
-	*/
-	d->font_size   = font_size;
-	l->data = d;
+	l->string = uiStringNew(text, font_size,50,20,5,11);
 	l->draw = uiLabelDraw;
 	return l;
 }
@@ -201,8 +121,6 @@ static int uiSliderMotion(uiEntity *self,float x, float y, float p){
 	return 0;
 }
 static void uiSliderDraw(uiEntity *self){
-	cairo_surface_t *surface;
-	cairo_t *cr;
 	float *color = uiWindowGetColor(UI_ITEM_COLOR,UI_NORMAL_COLOR);
 	float bgcol[4] = {0.0,0.0,0.0,0.2};
 	float barcol[4] = {0.3,0.3,0.3,1.0};
@@ -230,27 +148,7 @@ static void uiSliderDraw(uiEntity *self){
 			(self->sizex - 2*margin)
 				*(sd->value/(sd->max_value-sd->min_value)) ,
 			self->sizey - 2*margin	);
-
-	if(!self->tex){
-		printf("rendering texture\n");
-		self->tex = malloc(self->tex_sizex*self->tex_sizey*4);
-		memset(self->tex,0,self->tex_sizex*self->tex_sizey*4);
-		surface = cairo_image_surface_create_for_data((unsigned char*)self->tex,
-				CAIRO_FORMAT_ARGB32,
-				self->tex_sizex,
-				self->tex_sizey,
-				4*self->tex_sizex);
-		cr = cairo_create(surface);
-		cairo_select_font_face(cr,"sans",CAIRO_FONT_SLANT_NORMAL,
-						CAIRO_FONT_WEIGHT_NORMAL);
-		cairo_set_font_size(cr,10.0);
-		cairo_set_source_rgba(cr,0.0,0.0,0.0,1.0);
-		cairo_move_to(cr,5,11);
-		cairo_show_text(cr,self->name);
-		cairo_destroy(cr);
-		cairo_surface_finish(surface);
-	}
-	uiTextureDraw(self);
+	uiStringDraw(self->string,x,y,z,self->sizex,self->sizey);
 }
 
 uiEntity *uiSliderNew(char *name,
@@ -277,10 +175,7 @@ uiEntity *uiSliderNew(char *name,
 	b->data = sd;
 	b->draw = uiSliderDraw;
 	b->motion = uiSliderMotion;
-	b->tex_posx = 0;
-	b->tex_posy = 0;
-	b->tex_sizex = b->sizex;
-	b->tex_sizey = b->sizey;
+	b->string = uiStringNew(name,10,60,16,5,11);
 	return b;
 }
 static void uiColorDraw(uiEntity *self){

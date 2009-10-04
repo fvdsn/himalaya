@@ -269,50 +269,12 @@ void 	uiEntitySetSize(uiEntity *ent, float sizex, float sizey){
 	ent->sizex = sizex;
 	ent->sizey = sizey;
 }
-void  uiEntityMakeTexture(uiEntity *ent, int sizex, int sizey){
-	if(ent->tex){
-		if(ent->tex_sizex == sizex && ent->tex_sizey == sizey){
-			return;
-		}else{
-			uiEntityFreeTexture(ent);
-		}
-	}
-	ent->tex_sizex = sizex;
-	ent->tex_sizey = sizey;
-	ent->tex = malloc(sizex*sizey*4);
-}
-void  uiEntitySetTexture(uiEntity *ent, char *texture, int sizex, int sizey){
-	uiEntityFreeTexture(ent);
-	ent->tex = texture;
-	ent->tex_sizex = sizex;
-	ent->tex_sizey = sizey;
-}
-void  uiEntitySetTexturePos(uiEntity*ent, float posx, float posy, float posz,
-			 	float sizex, float sizey){
-	ent->tex_posx = posx;
-	ent->tex_posy = posy;
-	ent->tex_dsizex = sizex;
-	ent->tex_dsizey = sizey;
-}
-char *uiEntityGetTexture(uiEntity *ent, int *sizex, int *sizey){
-	if(sizex){
-		*sizex = ent->tex_sizex;
-	}
-	if(sizey){
-		*sizey = ent->tex_sizey;
-	}
-	return ent->tex;
-}
-void   uiEntityFreeTexture(uiEntity *ent){
-	if(ent->tex){
-		free(ent->tex);
-	}
-}
 void    uiEntityFree(uiEntity *ent){
 	if(ent->data){
 		free(ent->data);
 	}
 	free(ent);
+	/*TODO free strings and childs */
 }
 static int onEntity(uiEntity *ent, float posx, float posy){
 	float x = uiEntityGetPosX(ent);

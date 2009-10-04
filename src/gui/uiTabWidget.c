@@ -18,19 +18,22 @@ static int uiTabCount(uiEntity *tabenv){
 	return tabenv->child->count;
 }
 static void uiTabEnvDraw(uiEntity *self){
+	uiNode *n = self->child->first;
+	uiEntity *tab = NULL;
 	int tabcount = uiTabCount(self);
-	int index    = tabcount;
+	int index    = 0;
 	int display_index = ((uiTabEnvData*)self->data)->display_index;
 	float tabwidth;
 	glColor4f(0.45,0.45,0.45,1);
 	uiRectDraw(0,0,0,self->sizex, self->sizey - UI_TAB_HEIGHT - 2*UI_TAB_SPACING);
 	if(!tabcount){return;}
 	tabwidth = (self->sizex)/tabcount;
-	while(index--){
+	while(n){
 		float x = index *tabwidth + UI_TAB_SPACING/2;
 		float y = self->sizey - UI_TAB_HEIGHT - UI_TAB_SPACING;
 		float sx = tabwidth - UI_TAB_SPACING;
 		float sy = UI_TAB_HEIGHT;
+		tab = (uiEntity*)(n->data);
 		glColor4f(0.40,0.40,0.40,1);
 		if(index == display_index){
 			glColor4f(0.45,0.45,0.45,1);
@@ -45,13 +48,18 @@ static void uiTabEnvDraw(uiEntity *self){
 			sx += UI_TAB_SPACING/2;
 		}
 		uiRectDraw(x,y,0,sx,sy);
+		if(tab && tab->namestring){
+			uiStringDraw(tab->namestring,x,y,0.1,sx,sy);
+		}
+		n = n->next;
+		index++;
 	}
 }
-
 static int uiTabEnvClick(uiEntity *self,int button, int down, float x, float y, float pressure){
 	uiTabEnvData *ted = (uiTabEnvData*)self->data;
 	int tabcount = uiTabCount(self);
-	if(tabcount && button == 0 && down == UI_KEY_UP){
+	if(tabcount && button == 0 && down == UI_KEY_UP &&
+			y > self->sizey - UI_TAB_HEIGHT - UI_TAB_SPACING ){
 		int tab = x/self->sizex*tabcount;
 		int i = 0;
 		uiNode *n = self->child->first;
@@ -89,6 +97,9 @@ int uiTabAdd(uiEntity *tab, uiEntity *tabenv){
 		ted->display_index = 0;
 	}else{
 		tab->display = 0;
+	}
+	if(!tab->namestring){
+		tab->namestring = uiStringNew(tab->name,10,100,UI_TAB_HEIGHT,5,11);
 	}
 	return tabenv->child->count -1;
 }

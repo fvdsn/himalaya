@@ -4,6 +4,7 @@
 #include "uiIterator.h" 
 
 #define UI_NAME_LENGTH 32
+#define UI_STRING_LENGTH (UI_NAME_LENGTH*32)
 #define UI_FRAME_INTERVAL 20
 
 typedef long   uiTime;
@@ -43,6 +44,21 @@ enum ui_margin{
 	UI_MARGIN_WEST
 };
 
+typedef struct ui_string{
+	char text[UI_STRING_LENGTH]; /*the text displayed*/
+	const char*font;
+	float color[4];
+	float font_size;
+	int font_weight;
+	int font_slant;
+	float px;
+	float py;
+	int sx;		/*size of the buffer*/
+	int sy;
+	char *buffer;	/* the texture rendered */
+	int uptodate;	/*if zero : the string needs to be redrawn*/
+}uiString;
+
 struct uiEntity_s{
 	char name[UI_NAME_LENGTH];
 	int type;
@@ -54,6 +70,7 @@ struct uiEntity_s{
 	int enabled;
 	uiEntity *parent;
 	uiList *child;
+	uiString *namestring;
 
 	/* callbacks */
 	void (*draw)(uiEntity *self);
@@ -86,17 +103,9 @@ struct uiEntity_s{
 	float rel_sizey;
 
 	int align; /* N,E,S,W */
-	
 
-	/*texture*/
-	float  	tex_posx;	/*display offset of the texture */
-	float  	tex_posy;
-	float   tex_posz;
-	float   tex_dsizex;	/*display size of the texture */
-	float   tex_dsizey;
-	int 	tex_sizex;	/*internal size of the texture */
-	int	tex_sizey;
-	char *tex;
+	/*string*/
+	uiString *string;
 
 	/*state*/
 	int mouseover;		/*the mouse is over, or dragging from the entity*/
@@ -126,13 +135,6 @@ void 	uiEntityFitX(uiEntity *ent, float relsize);
 void 	uiEntityFitY(uiEntity *ent, float relsize);
 void	uiEntitySetMargin(uiEntity *ent, enum ui_margin side, float px);
 void	uiScreenSet(uiEntity *ent);
-
-void  	uiEntityMakeTexture(uiEntity *ent, int sizex, int sizey);
-void  	uiEntitySetTexture(uiEntity *ent, char *texture, int sizex, int sizey);
-void  	uiEntitySetTexturePos(uiEntity*ent, float posx, float posy, float posz,
-			 	float sizex, float sizey);
-char*	uiEntityGetTexture(uiEntity *ent, int *sizex, int *sizey);
-void   	uiEntityFreeTexture(uiEntity *ent);
 
 uiEntity * uiEntityPick(float posx, float posy);
 
@@ -210,6 +212,12 @@ void uiWindowDrawBegin(void);
 void uiWindowDrawEnd(void);
 void uiNewWindow(const char *name, int sizex, int sizey);
 void uiMainLoop(void);
+
+
+uiString *uiStringNew(const char *text, float font_size, int sx, int sy, float px, float py);
+void uiStringDraw(uiString *s, float px, float py, float pz, float sx, float sy);
+void uiStringSetSize(uiString *s, float sx, float sy);
+
 
 #endif
 
