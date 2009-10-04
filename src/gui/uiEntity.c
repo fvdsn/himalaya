@@ -14,6 +14,49 @@ static uiEntity *ent_active;	/* if not null, all events go trough that
 				   entity even if the mouse is not over.
 				  */
 static uiEntity *ent_screen;	/* The root entity that is currently drawn */
+static void uiEntityInnerTighten(uiEntity *e){
+	uiNode *n;
+	uiEntity *c;
+	float sx = e->margin_in_west  + e->margin_in_east;
+	float sy = e->margin_in_north + e->margin_in_south;
+	float px = 0;
+	float py = 0;
+	if(!e->child){
+		e->inner_sizex = e->sizex;
+		e->inner_sizey = e->sizey;
+	}else{
+		n = e->child->first;
+		while(n){
+			c = (uiEntity*)n->data;
+			if(c->align == UI_ALIGN_FIXED){
+				if(px < c->posx + c->sizex + e->margin_in_east){
+					px = c->posx + c->sizex + e->margin_in_east;
+				}
+				if(py < c->posy + c->sizey + e->margin_in_north){
+					py = c->posy + c->sizey + e->margin_in_north;
+				}
+			}else{
+				sx += c->sizex;
+				sy += c->sizey;
+			}
+			n = n->next;
+		}
+		if(sx < px){ sx = px;}
+		if(sy < py){ sy = py;}
+		if(sx < e->sizex){
+			e->inner_sizex = e->sizex;
+		}else{
+			e->inner_sizex = sx;
+		}
+		if(sy < e->sizey){
+			e->inner_sizey = e->sizey;
+		}else{
+			e->inner_sizey = sy;
+		}
+	}
+}
+		
+
 
 static void uiEntityLayout(uiEntity *e){
 	uiNode *n;
@@ -21,8 +64,14 @@ static void uiEntityLayout(uiEntity *e){
 	float px,py,sx,sy,posx,posy,sizex,sizey;
 	posx = e->margin_in_west;
 	posy = e->margin_in_south;
-	sizex = e->sizex - e->margin_in_west - e->margin_in_east;
-	sizey = e->sizey - e->margin_in_south - e->margin_in_north;
+	if(e->type == UI_ENT_REGION){
+		uiEntityInnerTighten(e);
+		sizex = e->inner_sizex - e->margin_in_west - e->margin_in_east;
+		sizey = e->inner_sizey - e->margin_in_south - e->margin_in_north;
+	}else{
+		sizex = e->sizex - e->margin_in_west - e->margin_in_east;
+		sizey = e->sizey - e->margin_in_south - e->margin_in_north;
+	}
 	/* those vars represent the free zone where we can align entities.
 	 * that zone is shrunk when a new child entity is aligned
 	 * fixed and centered entities don't take space

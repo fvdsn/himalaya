@@ -203,12 +203,11 @@ uiEntity *uiColorNew(char *name, float *color){
 #define SLIDER_MARGIN 2
 #define SLIDER_Z 10
 static void uiRegionDraw(uiEntity *self){
-	uiRegionData *rd = (uiRegionData*)self->data;
 	glColor4f(0.45,0.45,0.45,1);
 	uiRectDraw(0,0,0,self->sizex,self->sizey);
 	/*vertical slider */
 	glEnable(GL_DEPTH_TEST);
-	if(self->dy < 0 || self->dy + rd->inner_sizey > self->sizey){
+	if(self->dy < 0 || self->dy + self->inner_sizey > self->sizey){
 		/*we need to draw a slider */
 		/*draw the slider background */
 		float px = self->sizex - SLIDER_WIDTH - SLIDER_MARGIN;
@@ -218,15 +217,15 @@ static void uiRegionDraw(uiEntity *self){
 		glColor4f(0.4,0.4,0.4,1);
 		uiRectDraw(px,py,SLIDER_Z,SLIDER_WIDTH,sy);
 		/*draw the slider handle */
-		if(rd->inner_sizey > 0){
-			float handle_sy = sy * self->sizey / rd->inner_sizey;
-			float handle_py  = self->dy *self->sizey / rd->inner_sizey;
+		if(self->inner_sizey > 0){
+			float handle_sy = sy * self->sizey / self->inner_sizey;
+			float handle_py  = self->dy *self->sizey / self->inner_sizey;
 			glColor4f(0.5,0.5,0.5,1);
 			uiRectDraw(px,handle_py+SLIDER_MARGIN,SLIDER_Z+0.1,SLIDER_WIDTH,handle_sy);
 		}
 	}
 	/*horizontal slider */
-	if(self->dx < 0 || self->dx + rd->inner_sizex > self->sizex){
+	if(self->dx < 0 || self->dx + self->inner_sizex > self->sizex){
 		/*we need to draw a slider */
 		/*draw the slider background */
 		float py = SLIDER_MARGIN;
@@ -236,9 +235,9 @@ static void uiRegionDraw(uiEntity *self){
 		glColor4f(0.4,0.4,0.4,1);
 		uiRectDraw(px,py,SLIDER_Z,sx,SLIDER_WIDTH);
 		/*draw the slider handle */
-		if(rd->inner_sizex > 0){
-			float handle_sx = sx * self->sizex / rd->inner_sizex;
-			float handle_px  = self->dx *self->sizex / rd->inner_sizex;
+		if(self->inner_sizex > 0){
+			float handle_sx = sx * self->sizex / self->inner_sizex;
+			float handle_px  = self->dx *self->sizex / self->inner_sizex;
 			glColor4f(0.5,0.5,0.5,1);
 			uiRectDraw(handle_px+SLIDER_MARGIN,py,SLIDER_Z+0.1,handle_sx,SLIDER_WIDTH);
 		}
@@ -248,23 +247,22 @@ static void uiRegionDraw(uiEntity *self){
 
 static int uiRegionMotion(uiEntity *self,float x, float y, float p){
 	float dx,dy;
-	uiRegionData *rd = (uiRegionData*)self->data;
 	if(uiStateMouse(UI_MOUSE_BUTTON_1)){
 		uiStateMouseDelta(&dx,&dy,NULL);
-		if(self->sizex < rd->inner_sizex){
+		if(self->sizex < self->inner_sizex){
 			if(self->dx + dx < 0){
 				self->dx = 0;
-			}else if(self->dx + dx + self->sizex > rd->inner_sizex){
-				self->dx = rd->inner_sizex - self->sizex;
+			}else if(self->dx + dx + self->sizex > self->inner_sizex){
+				self->dx = self->inner_sizex - self->sizex;
 			}else{
 				self->dx += dx;
 			}
 		}
-		if(self->sizey < rd->inner_sizey){
+		if(self->sizey < self->inner_sizey){
 			if(self->dy + dy < 0){
 				self->dy = 0;
-			}else if(self->dy + dy + self->sizey > rd->inner_sizey){
-				self->dy = rd->inner_sizey - self->sizey;
+			}else if(self->dy + dy + self->sizey > self->inner_sizey){
+				self->dy = self->inner_sizey - self->sizey;
 			}else{
 				self->dy += dy;
 			}
@@ -274,12 +272,10 @@ static int uiRegionMotion(uiEntity *self,float x, float y, float p){
 }
 uiEntity *uiRegionNew(char *name,float inner_sizex, float inner_sizey){
 	uiEntity *r = uiEntityNew(name,UI_ENT_REGION);
-	uiRegionData *rd = (uiRegionData*)malloc(sizeof(uiRegionData));
-	rd->inner_sizex = inner_sizex;
-	rd->inner_sizey = inner_sizey;
+	r->inner_sizex = inner_sizex;
+	r->inner_sizey = inner_sizey;
 	uiEntitySetSize(r,100,100);
 	r->draw = uiRegionDraw;
-	r->data = rd;
 	r->motion = uiRegionMotion;
 	return r;
 }	
@@ -299,3 +295,9 @@ uiEntity *uiRectNew(char *name, float sx, float sy, float red, float g, float b)
 	return r;
 }
 
+uiEntity *uiDivNew(char *name, float sx, float sy){
+	uiEntity *d = uiEntityNew(name,UI_ENT_DIV);
+	d->sizex = sx;
+	d->sizey = sy;
+	return d;
+}

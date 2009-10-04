@@ -1,6 +1,5 @@
 #ifndef __UI_CORE_H__
 #define __UI_CORE_H__
-#include "uiFont.h"
 #include "uiIterator.h" 
 
 #define UI_NAME_LENGTH 32
@@ -24,8 +23,7 @@ enum ui_entity_type{
 	UI_ENT_CAIROLABEL,
 	UI_ENT_REGION,
 	UI_ENT_TABENV,
-	UI_ENT_TABBUT,
-	UI_ENT_TAB,
+	UI_ENT_DIV
 };
 
 enum ui_align{
@@ -85,6 +83,8 @@ struct uiEntity_s{
 	float posz;
 	float sizex;
 	float sizey;
+	float inner_sizex;
+	float inner_sizey;
 	float dx;	/*positionning of the child widgets*/
 	float dy;
 	float color[4];
