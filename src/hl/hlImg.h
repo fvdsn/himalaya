@@ -217,6 +217,7 @@ hlFrame *hlImgReadFrame(hlImg *img, hlState s);
 /* returns a raw rendering of the image in region and state */
 hlRaw 	*hlImgRenderNewRaw(hlImg *img, hlRegion r, hlState s);
 void hlImgRenderToRaw(hlImg *img, hlRaw*raw, hlState state, int px, int py, unsigned int z);
+void hlImgRenderRegionToRaw(hlImg *img, hlRegion r, hlState s, hlRaw *raw); /*TODO*/
 
 /* renders the tile in the designed op and below. if an operation
  * has caching enabled, a copy of the result is put into the tile.
