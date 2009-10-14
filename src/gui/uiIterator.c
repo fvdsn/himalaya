@@ -2,7 +2,7 @@
 #include <string.h>
 #include "uiIterator.h"
 
-uiNode *uiNewNode(void *data){
+static uiNode *uiNewNode(void *data){
 	uiNode *n = (uiNode*)malloc(sizeof(uiNode));
 	n->next = NULL;
 	n->data = data;

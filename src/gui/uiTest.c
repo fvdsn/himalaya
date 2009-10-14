@@ -5,13 +5,12 @@
 
 float color[4] = {1.0,0.0,0.0,0.5};
 float color2[4] = {1.0, 0.5, 0.0, 255.0 };
-void button_click(uiEntity*self, int id){
+static void button_click(uiEntity*self, int id){
 	printf("CLICK! : %d\n",id);
 }
 int main(int argc, char **argv){
 	uiEntity *p;
 	uiEntity *r;
-	uiEntity *l;
 	uiEntity *e;
 	uiEntity *s;
 	uiEntity *te;

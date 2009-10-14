@@ -79,7 +79,7 @@ static int uiTabEnvClick(uiEntity *self,int button, int down, float x, float y, 
 	}
 	return 0;
 }
-uiEntity *uiTabEnvNew(char *name){
+uiEntity *uiTabEnvNew(const char *name){
 	uiEntity *te = uiEntityNew(name,UI_ENT_TABENV);
 	uiTabEnvData *ted = (uiTabEnvData*)malloc(sizeof(uiTabEnvData));
 	ted->display_index = 0;

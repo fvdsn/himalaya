@@ -19,7 +19,7 @@ void uiRectDraw(float x, float y, float z,float sx, float sy){
 		glVertex3f(x,		y+sy,		z);
 	glEnd();
 }
-uiEntity *uiScreenNew(char *name){
+uiEntity *uiScreenNew(const char *name){
 	uiEntity *s = uiEntityNew(name,UI_ENT_SCREEN);
 	uiEntitySetSize(s,10000,10000);
 	uiEntitySetPos(s,0,0);
@@ -48,7 +48,7 @@ static int uiButtonClick(uiEntity *self,int button, int down, float x, float y, 
 	}
 	return 0;
 }
-uiEntity *uiButtonNew(char *name,
+uiEntity *uiButtonNew(const char *name,
 		int id,
 		void(*click)(uiEntity *self, int id)){
 	uiButtonData *bd = (uiButtonData*)malloc(sizeof(uiButtonData));
@@ -65,7 +65,7 @@ uiEntity *uiButtonNew(char *name,
 static void uiLabelDraw(uiEntity *self){
 	uiStringDraw(self->string,0,0,0,self->sizex,self->sizey);	
 }
-uiEntity *uiLabelNew(char *name, const char *text,float font_size){
+uiEntity *uiLabelNew(const char *name, const char *text,float font_size){
 	uiEntity *l = uiEntityNew(name,UI_ENT_LABEL);
 	l->string = uiStringNew(text, font_size,50,20,5,11);
 	l->draw = uiLabelDraw;
@@ -90,7 +90,7 @@ static int uiPanelMotion(uiEntity *self,float x, float y, float p){
 	}
 	return 0;
 }
-uiEntity *uiPanelNew(char *name){
+uiEntity *uiPanelNew(const char *name){
 	uiEntity *p = uiEntityNew(name,UI_ENT_PANEL);
 	uiEntitySetSize(p,150,120);
 	p->draw = uiPanelDraw;
@@ -151,7 +151,7 @@ static void uiSliderDraw(uiEntity *self){
 	uiStringDraw(self->string,x,y,z,self->sizex,self->sizey);
 }
 
-uiEntity *uiSliderNew(char *name,
+uiEntity *uiSliderNew(const char *name,
 		int id,
 		float min_value,
 		float max_value,
@@ -192,7 +192,7 @@ static void uiColorDraw(uiEntity *self){
 	uiRectDraw(x,y+self->sizey/2,z,self->sizex/2,self->sizey/2);
 }
 
-uiEntity *uiColorNew(char *name, float *color){
+uiEntity *uiColorNew(const char *name, float *color){
 	uiEntity *c = uiEntityNew(name,UI_ENT_COLOR);
 	uiEntitySetSize(c,32,32);
 	c->data = color;
@@ -270,7 +270,7 @@ static int uiRegionMotion(uiEntity *self,float x, float y, float p){
 	}
 	return 0;
 }
-uiEntity *uiRegionNew(char *name,float inner_sizex, float inner_sizey){
+uiEntity *uiRegionNew(const char *name,float inner_sizex, float inner_sizey){
 	uiEntity *r = uiEntityNew(name,UI_ENT_REGION);
 	r->inner_sizex = inner_sizex;
 	r->inner_sizey = inner_sizey;
@@ -283,7 +283,7 @@ static void uiRectEntDraw(uiEntity *self){
 	glColor4f(self->color[0],self->color[1],self->color[2],self->color[3]);
 	uiRectDraw(0,0,0,self->sizex,self->sizey);
 }
-uiEntity *uiRectNew(char *name, float sx, float sy, float red, float g, float b){
+uiEntity *uiRectNew(const char *name, float sx, float sy, float red, float g, float b){
 	uiEntity *r = uiEntityNew(name,UI_ENT_RECT);
 	r->sizex = sx;
 	r->sizey = sy;
@@ -295,7 +295,7 @@ uiEntity *uiRectNew(char *name, float sx, float sy, float red, float g, float b)
 	return r;
 }
 
-uiEntity *uiDivNew(char *name, float sx, float sy){
+uiEntity *uiDivNew(const char *name, float sx, float sy){
 	uiEntity *d = uiEntityNew(name,UI_ENT_DIV);
 	d->sizex = sx;
 	d->sizey = sy;

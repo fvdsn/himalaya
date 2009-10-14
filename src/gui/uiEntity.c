@@ -303,6 +303,7 @@ void	uiEntitySetMargin(uiEntity *ent, enum ui_margin side, float px){
 		case UI_MARGIN_WEST:
 			ent->margin_in_west  = px;
 			break;
+		case UI_MARGIN_ALL:
 		default:
 			ent->margin_in_north = px;
 			ent->margin_in_east  = px;
