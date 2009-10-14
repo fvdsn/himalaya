@@ -1,9 +1,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "gui/uiGui.h"
+#include "uiHl.h"
+
 static uiEntity *uiSideBar(void){
 	uiEntity *te;
 	uiEntity *t;
+	uiEntity *hl;
+	
+	hl = uiHlNew("test",NULL,0,NULL);
+
 	te = uiTabEnvNew("sidebar");
 	uiEntitySetSize(te,180,1);
 	uiEntityFitY(te,1);
@@ -14,8 +20,6 @@ static uiEntity *uiSideBar(void){
 	uiEntityFitX(t,1);
 	uiEntityFitY(t,1);
 	uiTabAdd(t,te);
-
-
 
 	t = uiRegionNew("Layers",180,1);
 	uiEntityFitX(t,1);

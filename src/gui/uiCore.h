@@ -23,7 +23,8 @@ enum ui_entity_type{
 	UI_ENT_CAIROLABEL,
 	UI_ENT_REGION,
 	UI_ENT_TABENV,
-	UI_ENT_DIV
+	UI_ENT_DIV,
+	UI_ENT_HL
 };
 
 enum ui_align{

@@ -10,15 +10,18 @@ LDFLAG 	+=	-Lhl -lhl
 
 EXE 	= 	main.bin
 
-
+MAIN_OBJECTS = 	uiMain.o uiHl.o
 all: Makefile Makefile.inc main
 
-main: ${UI_OBJECTS} uiMain.o
+main: ${MAIN_OBJECTS}
 	${ECHO} Compile src:	${MAKE} ${MFLAG}
-	${LD} -o ${EXE} uiMain.o ${LDFLAG}
+	${LD} -o ${EXE} ${MAIN_OBJECTS} ${LDFLAG}
 
-uiMain.o:  uiMain.c gui/uiGui.h libgui.a hl/hlImg.h libhl.a
+uiMain.o:  uiMain.c libgui.a libhl.a
 	${CC} ${CCFLAG} -c uiMain.c
+
+uiHl.o: uiHl.c uiHl.h libgui.a libhl.a
+	${CC} ${CCFLAG} -c uiHl.c
 
 libgui.a: force_look
 	${ECHO} Compile libgui:	${MAKE} ${MFLAG}
