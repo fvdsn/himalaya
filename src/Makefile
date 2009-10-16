@@ -2,7 +2,8 @@ include Makefile.inc
 
 LDFLAG 	+= 	`sdl-config --libs` \
 		`pkg-config --libs cairo` \
-		-lGL -lGLU -lm 
+		-lGL -lGLU -lm \
+		-lIL -lILU
 
 LDFLAG 	+=	-Lgui -lgui
 

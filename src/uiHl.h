@@ -8,11 +8,20 @@ typedef struct ui_hl_data{
 	hlState state;
 	hlRaw *raw;
 	float zoom;
+	int px;
+	int py;
+	int pz;
+	int uptodate;
+	/*painting*/
+	int painting;
+	int lpx;
+	int lpy;
 }uiHlData;
 
 uiEntity *uiHlNew(const char *name, hlImg *img, hlState s, hlRaw *raw);
 void	uiHlSetImg(uiEntity *hl, hlImg *img);
 void	uiHlSetState(uiEntity *hl, hlState s);
 void	uiHLSetRenderSize(uiEntity *hl, int sx, int sy);
+void	uiHlRender(uiEntity *hl);
 #endif
 
