@@ -49,13 +49,13 @@ static void hl_draw_circle_8b(hlTile *a,hlColor *c, int chan,float *num, int tx,
 	const uint8_t* color = hlColorGetData(c);
 	int X = tx*HL_TILEWIDTH;
 	int Y = ty*HL_TILEWIDTH;
-	int cx = (int)hl_scale_float(num[0],tz);
-	int cy = (int)hl_scale_float(num[1],tz);
-	int r0 = pow(hl_scale_float(num[2],tz),2);
-	int r1 = pow(hl_scale_float(num[3],tz),2);
+	float cx = (int)hl_scale_float(num[0],tz);
+	float cy = (int)hl_scale_float(num[1],tz);
+	float r0 = pow(hl_scale_float(num[2],tz),2);
+	float r1 = pow(hl_scale_float(num[3],tz),2);
 	int x = HL_TILEWIDTH;
 	int y = HL_TILEWIDTH;
-	int r;
+	float r;
 	float f = 0;
 	if(X > cx +r1 || Y > cy +r1 || X+x < cx-r1 || Y+y < cy-r1){
 		return;
@@ -80,6 +80,9 @@ static void hl_draw_circle_8b(hlTile *a,hlColor *c, int chan,float *num, int tx,
 					f = num[4];
 				}else{
 					f = (float)(r1-r)/(float)(r1-r0)*num[4];
+				}
+				if(r1 < 0.5f){
+					f *= 2*r1;
 				}
 				hl_blend_mix_8b(data + (y*HL_TILEWIDTH+x)*chan,
 						color,
