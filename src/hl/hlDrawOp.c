@@ -57,7 +57,7 @@ static void hl_draw_circle_8b(hlTile *a,hlColor *c, int chan,float *num, int tx,
 	int y = HL_TILEWIDTH;
 	int r;
 	float f = 0;
-	if(X > cx +r1 || Y > cy +r1 || X+x < cx-r1 || X+y < cy-r1){
+	if(X > cx +r1 || Y > cy +r1 || X+x < cx-r1 || Y+y < cy-r1){
 		return;
 	}else if( 	( (X-cx)*(X-cx)+(Y-cy)*(Y-cy) < r0 ) &&
 			( (X-cx+x)*(X-cx+x)+(Y-cy)*(Y-cy) < r0 ) &&
