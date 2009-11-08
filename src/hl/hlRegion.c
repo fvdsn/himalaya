@@ -21,7 +21,7 @@ hlRegion hlNewRegion(int px, int py, int sx, int sy, unsigned int z){
 	r.ptx = hl_txy_from_sxy(px);
 	r.pty = hl_txy_from_sxy(py);
 	r.tx  = hl_txy_from_sxy(px + sx - 1) - r.ptx + 1;
-	r.ty  = hl_txy_from_sxy(px + sy - 1) - r.pty + 1;
+	r.ty  = hl_txy_from_sxy(py + sy - 1) - r.pty + 1;
 	return r;
 }
 void hlPrintRegion(hlRegion r){

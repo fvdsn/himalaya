@@ -360,26 +360,34 @@ static void hl_remove_child_node(hlNode *node, hlNode *parent){
 }
 hlTile * hlFrameTileRemove(hlFrame *f, int x, int y, unsigned int z){
 	hlNode *n = hl_frame_get_root(f,x,y);
-	hlNode * pathn[HL_MAX_TILE_LEVEL];
 	hlTile * t = NULL;
-	uint32_t pathx[HL_MAX_TILE_LEVEL];
-	uint32_t pathy[HL_MAX_TILE_LEVEL];
-	uint32_t level = f->depth - z;
-	uint32_t i = level;
-	uint32_t j = 0;
-	if(hl_tile_path(pathx,pathy,x,y,z,level)){
+	unsigned int pathx[HL_MAX_TILE_LEVEL];
+	unsigned int pathy[HL_MAX_TILE_LEVEL];
+	hlNode * pathn[HL_MAX_TILE_LEVEL];	/*list of node from root to removed node */
+	int level = f->depth - z;
+	int i = level;
+	int j = 0;
+	/* creates a theorical quadtree path to the tile */
+	if(hl_tile_path(pathx,pathy,x,y,z,f->depth)){
 		return NULL;
 	}
+	/*create the list of nodes from root to tile */
 	pathn[0] = n;
 	while(i--){
 		j++;
 		n = hl_tile_match(n,pathx[j],pathy[j]);
 		pathn[j] = n;
+		if(!n){	
+			/* target node not in quadtree */
+			return NULL;
+		}
 		assert(n);
 	}
 	assert(n->tile);
 	t = n->tile;
 	n->tile = NULL;
+	/* if the node where we removed the tile doesn't have any more tiles,
+	 * we free it. And that all the way to root */
 	do{
 		if(	!pathn[j]->tl && !pathn[j]->tr 
 			&& !pathn[j]->br && !pathn[j]->bl
@@ -421,7 +429,68 @@ static hlTile *hl_white_rgba_tile(){
 	hlTileFill(t,&c);
 	return t;
 }*/
+static void hlTileToRaw(hlTile *t, hlRaw *raw, int px, int py){
+	const int sx = hlRawSizeX(raw);
+	const int sy = hlRawSizeY(raw);
+	const int bpp = hlCSGetBpp(hlRawCS(raw));
+	uint8_t * tiledata = HL_DATA_8B(t);
+	int ptx = 0;	/* top left point on tile */
+	int pty = 0;
+	int prx = px;	/* top left point on raw */
+	int pry = py;
+	int psx = HL_TILEWIDTH;	/* size of copy region */
+	int psy = HL_TILEWIDTH;
+	int y;
+	if(px <= -HL_TILEWIDTH || py <= -HL_TILEWIDTH || px >= sx || py >=sy ||sx <= 0 || sy <=0){
+		printf("rejected px,py:%d,%d\n",px,py);
+		return;
+	}
+	if(px < 0){ 
+		ptx = -px;
+		psx += px;
+		prx = 0;
+	}
+	if(py < 0){ 
+		pty = -py;
+		psy += py;
+		pry = 0;
+	}
+	if(px + HL_TILEWIDTH > sx){
+		psx -= (px + HL_TILEWIDTH - sx);
+	}
+	if(py + HL_TILEWIDTH > sy){
+		psy -= (py + HL_TILEWIDTH - sy);
+	}
+	y = psy;
+	if(psy <= 0 ){
+		printf("rejected\n");
+	}
+	while(y-- > 0){
+		memcpy(	raw->data +(prx+sx*(pry+y))*bpp,
+			tiledata + (ptx+HL_TILEWIDTH*(pty+y))*bpp,
+			psx*bpp);
+	}
+}
+
 void hlRegionToRaw(hlFrame *f,hlRaw *raw,int px, int py,unsigned int z){
+	hlRegion r = hlNewRegion(px,py,hlRawSizeX(raw),hlRawSizeY(raw),z);
+	int x,y;	/*tile index*/
+	int rx,ry;	/*top left pixel in raw where current tile will be copied */
+	x = r.tx;	
+	while(x--){
+		y = r.ty;
+		while(y--){
+			rx = (r.ptx+x)*HL_TILEWIDTH -px;
+			ry = (r.pty+y)*HL_TILEWIDTH -py;
+			hlTileToRaw(	hlFrameTileRead(f,r.ptx+x,r.pty+y, r.z ),
+					raw,
+					rx,
+					ry);
+		}
+	}
+}
+
+void hlRegionToRaw2(hlFrame *f,hlRaw *raw,int px, int py,unsigned int z){
 	hlRegion r = hlNewRegion(px,py,hlRawSizeX(raw),hlRawSizeY(raw),z);
 	const int bpp = hlCSGetBpp(hlFrameCS(f));
 	uint8_t * tiledata;
@@ -434,8 +503,12 @@ void hlRegionToRaw(hlFrame *f,hlRaw *raw,int px, int py,unsigned int z){
 	int mx; /*width of the line/collums in tile to be copied. in [1 HL_TILEWIDTH]*/
 	int my;
 	int i;
+	int a,b,c;
+	c = hlRawSizeX(raw)*hlRawSizeY(raw)*bpp;
 	x = r.tx;
 	/*hlRawFill(raw,&bgc)*/;
+	hlPrintRegion(r);
+	printf("%p\n",f->bg);
 	while(x--){
 		y = r.ty;
 		while(y--){
@@ -456,11 +529,28 @@ void hlRegionToRaw(hlFrame *f,hlRaw *raw,int px, int py,unsigned int z){
 				my -= (r.pty+r.ty)*HL_TILEWIDTH - (r.py+r.sy);
 			}
 			i = my;
-			while(i--){
-				tiledata = HL_DATA_8B(hlFrameTileRead(  f,
-									r.ptx+x,
-									r.pty+y,
-									r.z ));
+			tiledata = HL_DATA_8B(hlFrameTileRead(  f,
+								r.ptx+x,
+								r.pty+y,
+								r.z ));
+			if(i > HL_TILEWIDTH){
+				printf("i too big ...\n");
+				i = HL_TILEWIDTH;
+			}
+			while(i-- > 0){
+				if(!tiledata){
+					printf("no tiledata\n");
+				}
+				a = ((ry+i)*r.sx + rx)*bpp;
+				b = ((try+i)*HL_TILEWIDTH + trx)*bpp;
+				if(a <0 || a > c ) {
+					printf("ry: %d \ti:%d \tr.sx:%d \trx:%d \ta:%d\n",ry,i,r.sx,rx,a);
+				}
+				if(b < 0 || b > HL_TILE_PIXCOUNT*bpp) {
+					printf("ry: %d \ti:%d \tr.sx:%d \trx:%d \tb:%d\n",ry,i,r.sx,rx,b);
+				}
+
+				//printf("%d,%d,%d\n", ((try+i)*HL_TILEWIDTH +trx)*bpp,mx*bpp);
 				memcpy(raw->data + ((ry+i)*r.sx + rx)*bpp,
 					tiledata + ((try+i)*HL_TILEWIDTH + trx)*bpp,
 					mx*bpp);
@@ -479,7 +569,7 @@ hlRaw * hlRawFromFrame(hlFrame *f,unsigned int z){
 }
 	
 /* 	hlFrameFromRaw(...) 	*/
-hlTile *hlTileFromRaw(hlRaw *r,hlColor *bg,int tx, int ty){
+static hlTile *hlTileFromRaw(hlRaw *r,hlColor *bg,int tx, int ty){
 	hlTile* t = hlNewTile(r->cs);
 	const int bpp = hlCSGetBpp(r->cs);
 	const int px  = tx * HL_TILEWIDTH;

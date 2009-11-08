@@ -23,8 +23,12 @@ hlRaw* hlNewRaw(hlCS cs, int sizex, int sizey){
 	return raw;
 }
 void hlFreeRaw(hlRaw *raw){
-	free(raw->data);
-	free(raw);
+	if(raw){
+		if(raw->data){
+			free(raw->data);
+		}
+		free(raw);
+	}
 	return;
 }
 uint64_t hlRawGetByteCount(hlRaw *raw){
