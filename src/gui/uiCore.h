@@ -24,6 +24,7 @@ enum ui_entity_type{
 	UI_ENT_REGION,
 	UI_ENT_TABENV,
 	UI_ENT_DIV,
+	UI_ENT_DISPLAY,
 	UI_ENT_HL
 };
 
@@ -44,7 +45,8 @@ enum ui_margin{
 };
 
 typedef struct ui_string{
-	char text[UI_STRING_LENGTH]; /*the text displayed*/
+	char text[UI_STRING_LENGTH]; /*the text to be displayed*/
+	char drawntext[UI_STRING_LENGTH]; /*the text displayed*/
 	const char*font;
 	float color[4];
 	float font_size;
@@ -54,8 +56,9 @@ typedef struct ui_string{
 	float py;
 	int sx;		/*size of the buffer*/
 	int sy;
+	float values[4];
+	int valcount;
 	char *buffer;	/* the texture rendered */
-	int uptodate;	/*if zero : the string needs to be redrawn*/
 }uiString;
 
 struct uiEntity_s{
@@ -84,10 +87,16 @@ struct uiEntity_s{
 	float posz;
 	float sizex;
 	float sizey;
-	float inner_sizex;
+	float inner_sizex;	/*for region widgets : description of the inside area */
 	float inner_sizey;
+	float inner_posx;
+	float inner_posy;
 	float dx;	/*positionning of the child widgets*/
 	float dy;
+	float view_sizex; /*the part of the entity that is displayed in [0,sizex]*/
+	float view_sizey;
+	float view_posx; /*in [0,sizex]*/
+	float view_posy;
 	float color[4];
 
 	/*flow and alignment*/
@@ -218,6 +227,8 @@ void uiMainLoop(void);
 uiString *uiStringNew(const char *text, float font_size, int sx, int sy, float px, float py);
 void uiStringDraw(uiString *s, float px, float py, float pz, float sx, float sy);
 void uiStringSetSize(uiString *s, float sx, float sy);
+char *uiStringWrite(uiString *s);
+void uiStringSetColor(uiString *s, float r, float g, float b, float a);
 
 
 #endif

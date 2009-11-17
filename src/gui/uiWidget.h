@@ -4,6 +4,10 @@
 #include "uiCore.h"
 
 #define UI_TEXT_LENGTH 1024
+#define UI_BUTTON_WIDTH 60
+#define UI_BUTTON_HEIGHT 16
+#define UI_PANEL_WIDTH 150
+#define UI_PANEL_HEIGHT 120
 
 typedef struct button_data{
 	int id;
@@ -20,11 +24,12 @@ uiEntity *uiLabelNew(const char *name,
 		float font_size);
 
 typedef struct slider_data{
-	float min_value;
-	float max_value;
-	float update_speed;
-	float update_value;
-	float value;
+	float min_value;	/*minimum value of the slider */
+	float max_value;	/*maximum value of the slider */
+	float update_speed;	/*how much the value increases by dragged pixel */
+	float value;		/*the value of the slider */
+	float base;		/*if the slider is exponential, the base of the exponent */
+	float exp_value;	/* = base^value. is in [min_value,max_value] */
 	float *dest_value;
 	int id;
 	void (*slide)(uiEntity*self, float value, int id);
@@ -35,8 +40,12 @@ uiEntity *uiSliderNew(const char *name,
 		float min_value,
 		float max_value,
 		float update_speed,
+		float base,
 		float *dest_value,
 		void (*slide)(uiEntity*self,float value,int id));
+
+uiEntity *uiDisplayFloatNew(const char *name, float *display_value);
+uiEntity *uiDisplayIntNew(const char *name, int *display_value);
 
 uiEntity *uiPanelNew(const char *name);
 uiEntity *uiColorNew(const char *name,float *color);

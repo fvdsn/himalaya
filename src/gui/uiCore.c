@@ -41,6 +41,7 @@ void uiNewWindow(const char *name, int sizex, int sizey){
 static void uiKeyDown(SDL_Event *event){
 	char key = (char)(event->key.keysym.sym);
 	uiStateSetKey(key,1);
+	printf("%c:%d\n",key,(int)key);
 }
 static void uiKeyUp(SDL_Event *event){
 	char key = (char)(event->key.keysym.sym);
@@ -69,8 +70,8 @@ void uiMainLoop(void){
 		while(SDL_PollEvent(&event)){
 			switch(event.type){
 				case SDL_KEYDOWN:
-					break;
 					uiKeyDown(&event);
+					break;
 				case SDL_KEYUP:
 					uiKeyUp(&event);
 					break;

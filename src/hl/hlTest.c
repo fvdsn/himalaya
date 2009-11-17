@@ -5,6 +5,7 @@ int main(int argc, char **argv){
 	hlRaw *out  = hlNewRaw(cs,600,600);
 	hlImg *img  = hlNewImgFromSource(hlFrameFromRaw(in));
 	hlColor c   = hlNewColor(cs,0.5,1,0,0,0.9);
+	hlImg *img2 = hlNewImg(c,10000,100000);
 	hlOp *op;
 	hlOpRef r1,r2,r3;
 

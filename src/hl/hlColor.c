@@ -55,14 +55,12 @@ void hlColorSetChan(hlColor* col, int channel, float value){
 	float*    col32f = (float*)col->color;
 	assert( channel >=0 && channel < hlCSGetChan(col->cs));
 	switch(hlCSGetBpc(col->cs)){
-		case HL_8B : {
+		case HL_8B :
 			col->color[channel] = (uint8_t)(value*255.0);
 			break;
-		}
-		case HL_32B : {
+		case HL_32B : 
 			col32f[channel] = value;
 			break;
-		}
 	}
 	return;
 }

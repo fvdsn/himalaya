@@ -4,6 +4,7 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <cairo.h>
+#include <math.h>
 #include "uiCore.h"
 #include "uiWidget.h"
 
@@ -53,13 +54,13 @@ uiEntity *uiButtonNew(const char *name,
 		void(*click)(uiEntity *self, int id)){
 	uiButtonData *bd = (uiButtonData*)malloc(sizeof(uiButtonData));
 	uiEntity *b = uiEntityNew(name,UI_ENT_BUTTON);
-	uiEntitySetSize(b,60,16);
+	uiEntitySetSize(b,UI_BUTTON_WIDTH,16);
 	bd->id = id;
 	bd->click = click;
 	b->data = bd;
 	b->draw = uiButtonDraw;
 	b->click = uiButtonClick;
-	b->string = uiStringNew(name,10,60,16,5,11);
+	b->string = uiStringNew(name,10,UI_BUTTON_WIDTH,16,5,11);
 	return b;
 }
 static void uiLabelDraw(uiEntity *self){
@@ -92,7 +93,7 @@ static int uiPanelMotion(uiEntity *self,float x, float y, float p){
 }
 uiEntity *uiPanelNew(const char *name){
 	uiEntity *p = uiEntityNew(name,UI_ENT_PANEL);
-	uiEntitySetSize(p,150,120);
+	uiEntitySetSize(p,UI_PANEL_WIDTH,UI_PANEL_HEIGHT);
 	p->draw = uiPanelDraw;
 	p->motion = uiPanelMotion;
 	return p;
@@ -103,7 +104,7 @@ static int uiSliderMotion(uiEntity *self,float x, float y, float p){
 	if(uiStateMouse(UI_MOUSE_BUTTON_1)){
 		uiStateMouseDelta(&dx,NULL,NULL);
 		v = sd->value + dx*sd->update_speed;
-		if(v > sd->max_value){
+		if(v >= sd->max_value){
 			sd->value = sd->max_value;
 		}else if (v < sd->min_value){
 			sd->value = sd->min_value;
@@ -114,7 +115,39 @@ static int uiSliderMotion(uiEntity *self,float x, float y, float p){
 			if (sd->slide){
 				sd->slide(self,v,sd->id);
 			}else if(sd->dest_value){
-				*(sd->dest_value) = v;
+				*(sd->dest_value) = sd->value;
+			}
+		}
+	}
+	return 0;
+}
+static int uiSliderExpMotion(uiEntity *self,float x, float y, float p){
+	float dx,v, ev;
+	uiSliderData *sd = (uiSliderData*)self->data;
+	if(uiStateMouse(UI_MOUSE_BUTTON_1)){
+		uiStateMouseDelta(&dx,NULL,NULL);
+		v = sd->value + dx*sd->update_speed;
+		ev = powf(sd->base,v);
+		if(ev > sd->max_value){
+			sd->value = logf(sd->max_value)/logf(sd->base);
+			sd->exp_value = sd->max_value;
+		}else if (ev < sd->min_value){
+			sd->value = logf(sd->min_value)/logf(sd->base);
+			sd->exp_value = sd->min_value;
+		}else{
+			sd->value = v;
+			sd->exp_value = ev;
+		}
+		printf("Slider [%f,%f] base:%f -> value :%f ->exp_value :%f\n",
+				sd->min_value,
+				sd->max_value,
+				sd->base,
+				v,ev);
+		if(dx != 0.0){
+			if (sd->slide){
+				sd->slide(self,ev,sd->id);
+			}else if(sd->dest_value){
+				*(sd->dest_value) = sd->exp_value;
 			}
 		}
 	}
@@ -144,10 +177,21 @@ static void uiSliderDraw(uiEntity *self){
 	}else{
 		glColor4f(barcol[0],barcol[1],barcol[2],barcol[3]);
 	}
-	uiRectDraw(	x + margin, y + margin,z,
+	if(sd->base == 0.0f){
+		uiRectDraw(	x + margin, y + margin,z,
 			(self->sizex - 2*margin)
 				*(sd->value/(sd->max_value-sd->min_value)) ,
 			self->sizey - 2*margin	);
+		snprintf(uiStringWrite(self->string),UI_TEXT_LENGTH,"%s : %.2f",
+				self->name,sd->value);
+	}else{
+		uiRectDraw(	x + margin, y + margin,z,
+			(self->sizex - 2*margin)
+				*(sd->exp_value/(sd->max_value-sd->min_value)) ,
+			self->sizey - 2*margin	);
+		snprintf(uiStringWrite(self->string),UI_TEXT_LENGTH,"%s : %.2f",
+					self->name,sd->exp_value);
+	}
 	uiStringDraw(self->string,x,y,z,self->sizex,self->sizey);
 }
 
@@ -156,27 +200,77 @@ uiEntity *uiSliderNew(const char *name,
 		float min_value,
 		float max_value,
 		float update_speed,
+		float base,
 		float *dest_value,
 		void(*slide)(uiEntity *self, float value, int id)){
 	uiSliderData *sd = (uiSliderData*)malloc(sizeof(uiSliderData));
 	uiEntity *b = uiEntityNew(name,UI_ENT_SLIDER);
-	uiEntitySetSize(b,60,16);
+	uiEntitySetSize(b,UI_BUTTON_WIDTH,UI_BUTTON_HEIGHT);
 	sd->id = id;
 	sd->slide = slide;
 	sd->min_value = min_value;
 	sd->max_value = max_value;
 	sd->update_speed = update_speed;
 	sd->dest_value = dest_value;
-	if(dest_value){
-		sd->value = *dest_value;
-	}else{
-		sd->value = ( max_value + min_value ) / 2.0;
-	}
 	b->data = sd;
 	b->draw = uiSliderDraw;
-	b->motion = uiSliderMotion;
-	b->string = uiStringNew(name,10,60,16,5,11);
+	if(base == 0.0f || base == 1.0f){
+		b->motion = uiSliderMotion;
+		sd->base = 0.0f;
+		sd->exp_value = 0.0f;
+		if(dest_value){
+			sd->value = *dest_value;
+		}else{
+			sd->value = ( max_value + min_value ) / 2.0;
+		}
+	}else{
+		b->motion = uiSliderExpMotion;
+		sd->base = base;
+		if(dest_value){
+			sd->exp_value = *dest_value;
+		}else{
+			sd->exp_value = (max_value + min_value) / 2.0;
+		}
+		sd->value = logf(sd->exp_value)/logf(sd->base);
+	}
+	b->string = uiStringNew(name,10,UI_BUTTON_WIDTH,UI_BUTTON_HEIGHT,5,11);
 	return b;
+}
+static void uiDisplayFloatDraw(uiEntity *self){
+	float *value = (float*)self->data;
+	glColor4f(0.6,0.6,0.6,0.5);
+	uiRectDraw(0,0,0,self->sizex,self->sizey);
+	if(value){
+		snprintf(uiStringWrite(self->string),UI_TEXT_LENGTH,"%s : %.2f",
+			self->name,*value);
+	}
+	uiStringDraw(self->string,0,0,1,self->sizex,self->sizey);
+}
+static void uiDisplayIntDraw(uiEntity *self){
+	int *value = (int*)self->data;
+	glColor4f(0.6,0.6,0.6,0.5);
+	uiRectDraw(0,0,0,self->sizex,self->sizey);
+	if(value){
+		snprintf(uiStringWrite(self->string),UI_TEXT_LENGTH,"%s : %d",
+			self->name,*value);
+	}
+	uiStringDraw(self->string,0,0,1,self->sizex,self->sizey);
+}
+uiEntity *uiDisplayFloatNew(const char *name, float *display_value){
+	uiEntity *d = uiEntityNew(name,UI_ENT_DISPLAY);
+	uiEntitySetSize(d,UI_BUTTON_WIDTH,UI_BUTTON_HEIGHT);
+	d->data = display_value;
+	d->string = uiStringNew(name,10,UI_BUTTON_WIDTH,UI_BUTTON_HEIGHT,5,11);
+	d->draw = uiDisplayFloatDraw;
+	return d;
+}
+uiEntity *uiDisplayIntNew(const char *name, int *display_value){
+	uiEntity *d = uiEntityNew(name,UI_ENT_DISPLAY);
+	uiEntitySetSize(d,UI_BUTTON_WIDTH,UI_BUTTON_HEIGHT);
+	d->data = display_value;
+	d->string = uiStringNew(name,10,UI_BUTTON_WIDTH,UI_BUTTON_HEIGHT,5,11);
+	d->draw = uiDisplayIntDraw;
+	return d;
 }
 static void uiColorDraw(uiEntity *self){
 	float *color = (float*)self->data;
@@ -247,28 +341,13 @@ static void uiRegionDraw(uiEntity *self){
 
 static int uiRegionMotion(uiEntity *self,float x, float y, float p){
 	float dx,dy;
-	if(uiStateMouse(UI_MOUSE_BUTTON_1)){
+	if(uiStateMouse(UI_MOUSE_BUTTON_2)){
 		uiStateMouseDelta(&dx,&dy,NULL);
-		if(self->sizex < self->inner_sizex){
-			if(self->dx + dx < 0){
-				self->dx = 0;
-			}else if(self->dx + dx + self->sizex > self->inner_sizex){
-				self->dx = self->inner_sizex - self->sizex;
-			}else{
-				self->dx += dx;
-			}
-		}
-		if(self->sizey < self->inner_sizey){
-			if(self->dy + dy < 0){
-				self->dy = 0;
-			}else if(self->dy + dy + self->sizey > self->inner_sizey){
-				self->dy = self->inner_sizey - self->sizey;
-			}else{
-				self->dy += dy;
-			}
-		}
+		self->dx += dx;
+		self->dy += dy;
+		return 0;
 	}
-	return 0;
+	return 1;
 }
 uiEntity *uiRegionNew(const char *name,float inner_sizex, float inner_sizey){
 	uiEntity *r = uiEntityNew(name,UI_ENT_REGION);

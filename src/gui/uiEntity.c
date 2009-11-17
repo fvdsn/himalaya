@@ -7,6 +7,8 @@
 #include "uiIterator.h"
 
 #define UI_MAX_ENTITY 1000
+#define MAX(A,B) ((A) < (B) ? (B) : (A))
+#define MIN(A,B) ((A) < (B) ? (A) : (B))
 
 static int ent_count = 0;
 static uiEntity *ent_over;	/*the mouse is over that entity */
@@ -55,9 +57,55 @@ static void uiEntityInnerTighten(uiEntity *e){
 		}
 	}
 }
-		
-
-
+/*determines what part of an entity is visible on screen */
+static void uiEntityVisibility(uiEntity * e, uiEntity *p){
+	float px,py;	/*the pos of e relative to p*/
+	if(!p){
+		e->view_posx = 0;
+		e->view_posy = 0;
+		e->view_sizex = e->sizex;
+		e->view_sizey = e->sizey;
+	}else{
+		px = e->posx + p->dx;
+		py = e->posy + p->dy; 
+		e->view_posx = MIN(e->sizex,MAX(0,-px));
+		e->view_posy = MIN(e->sizey,MAX(0,-py));
+		if(e->sizex < p->sizex){
+			if(px < 0){
+				e->view_sizex = MAX(0,e->sizex + px);
+			}else if(px + e->sizex > p->sizex){
+				e->view_sizex = MAX(0,p->sizex - px);
+			}else{
+				e->view_sizex = e->sizex;
+			}
+		}else{
+			if(px + e->sizex < p->sizex){
+				e->view_sizex = MAX(0,e->sizex + px);
+			}else if(px > 0){
+				e->view_sizex = MAX(0,p->sizex - px);
+			}else{
+				e->view_sizex = p->sizex;
+			}
+		}
+		if(e->sizey < p->sizey){
+			if(py < 0){
+				e->view_sizey = MAX(0,e->sizey + py);
+			}else if(py + e->sizey > p->sizey){
+				e->view_sizey = MAX(0,p->sizey - py);
+			}else{
+				e->view_sizey = e->sizey;
+			}
+		}else{
+			if(py + e->sizey < p->sizey){
+				e->view_sizey = MAX(0,e->sizey + py);
+			}else if(py > 0){
+				e->view_sizey = MAX(0,p->sizey - py);
+			}else{
+				e->view_sizey = p->sizey;
+			}
+		}
+	}
+}
 static void uiEntityLayout(uiEntity *e){
 	uiNode *n;
 	uiEntity *c;
@@ -128,6 +176,7 @@ static void uiEntityLayout(uiEntity *e){
 					break;
 			}
 			uiEntityLayout(c);
+			uiEntityVisibility(c,c->parent);
 			n = n->next;
 		}
 	}

@@ -1,5 +1,5 @@
 CC 	= gcc
-CCFLAG 	= -g -O3 -Wall -Wextra -pedantic -Wno-unused-parameter -g -Wdeclaration-after-statement -Wmissing-declarations -Wpointer-arith -Wstrict-prototypes -Wredundant-decls -Wcast-align -Wwrite-strings -Winline -Wformat-security -Wformat-nonliteral -Wswitch-enum  -Winit-self -std=c99
+CCFLAG 	= -g  -Wall -Wextra -pedantic -Wno-unused-parameter -g -Wdeclaration-after-statement -Wmissing-declarations -Wpointer-arith -Wstrict-prototypes -Wredundant-decls -Wcast-align -Wwrite-strings -Winline -Wformat-security -Wformat-nonliteral -Wswitch-enum  -Winit-self -std=c99
 LD 	= gcc
 LDFLAG 	= 
 AR 	= ar

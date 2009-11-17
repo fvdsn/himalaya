@@ -19,15 +19,28 @@ uiString *uiStringNew(const char *text, float font_size, int sx, int sy, float p
 	s->py = py;
 	s->sx = sx;
 	s->sy = sy;
-	s->uptodate = 0;
 	return s;
+}
+char *uiStringWrite(uiString *s){
+	return s->text;
+}
+void uiStringSetColor(uiString *s, float r, float g, float b, float a){
+	s->color[0] = r*255.0;
+	s->color[1] = g*255.0;
+	s->color[2] = b*255.0;
+	s->color[3] = a*255.0;
 }
 void uiStringDraw(uiString *s, float x, float y, float z, float sizex, float sizey){
 	cairo_surface_t *surface;
 	cairo_t *cr;
 	int sx = (int)sizex;
 	int sy = (int)sizey;
-	if(!s->uptodate || sx > s->sx || sy > s->sy || !s->buffer){
+	int uptodate = 1;
+	if(strncmp(s->text,s->drawntext,UI_STRING_LENGTH)){
+		strncpy(s->drawntext,s->text,UI_STRING_LENGTH);
+		uptodate = 0;
+	}
+	if(!uptodate || sx > s->sx || sy > s->sy || !s->buffer){
 		printf("rendering buffer\n");
 		free(s->buffer);
 		s->buffer = malloc(sx*sy*4);
@@ -47,7 +60,6 @@ void uiStringDraw(uiString *s, float x, float y, float z, float sizex, float siz
 		cairo_show_text(cr,s->text);
 		cairo_destroy(cr);
 		cairo_surface_finish(surface);
-		s->uptodate = 1;
 	}
 	glEnable(GL_TEXTURE_RECTANGLE_ARB);
 	glTexImage2D(	GL_TEXTURE_RECTANGLE_ARB,

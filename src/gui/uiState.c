@@ -50,6 +50,9 @@ void uiStateSetMod(int mod, int value){
 void uiStateSetMouse(int button, int value){
 	float x,y,p;
 	uiStateMousePos(&x,&y,&p);
+	if(value != 0){
+		value = 1;
+	}
 	if(mouse_button_state[button] != value){
 		mouse_button_state[button] = value;
 		uiEventMouseButton(button,value,x,y,p);
