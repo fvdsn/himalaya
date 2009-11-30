@@ -20,6 +20,7 @@ struct hl_op_class{
 	hlArg * arg;
 
 	void (*render)(hlTile *tile, hlOp *p);
+	void (*bbox_fun)(const hlOp *op, hlBBox *box);
 };
 
 struct hl_arg{
@@ -33,6 +34,19 @@ struct hl_arg{
 };
 
 hlOpClass op_library[HL_OP_COUNT];
+
+/*	hlBBox_(...)	*/
+int	hlBBoxTest(const hlBBox *box, int tx, int ty, int tz){
+	int zf = 1 << tz;
+	if(box->infinite){
+		return 1;
+	}else if( (tx+1)*zf-1 < box->tx || (ty+1)*zf-1 < box->ty || tx*zf >= box->btx || ty*zf >= box->bty){
+		return 0;
+	}else{
+		return 1;
+	}
+}
+	
 
 /* 	hlOp_(...)	*/
 static hlOpRef hl_new_ref(void){
@@ -53,6 +67,7 @@ hlOp* hlNewOp(int id){
 	op->p_numc 	= op_library[id].numc;
 	op->p_colorc	= op_library[id].colorc;
 	op->p_imgc	= op_library[id].imgc;
+	/*initialize parameters*/
 	if(op->p_numc){
 		op->p_num = (float*)malloc(op->p_numc*sizeof(float));
 		memset(op->p_num,0,op->p_numc*sizeof(float));
@@ -67,12 +82,17 @@ hlOp* hlNewOp(int id){
 		op->p_state = (hlState*)malloc(op->p_imgc*sizeof(hlState));
 		memset(op->p_state,0,op->p_imgc*sizeof(hlState));
 	}
+	/*init operation bounding box */
+	op->bbox.infinite = 1;
+	op->bbox.tx = 0;
+	op->bbox.ty = 0;
+	op->bbox.btx = 0;
+	op->bbox.bty = 0;
 	return op;
 	/* TODO : CHECK THIS LATER :
 	 * when creating a blending op that links against another image
 	 * and state, we must duplicate the state, so that if the linked
 	 * state is removed elsewhere, we still have a valid reference */ 
-	return op;
 }
 hlOp* hlDupOp(hlOp* op){
 	hlOp* dup = hlNewOp(op->id);
@@ -383,6 +403,11 @@ void	hlOpSetCSIn(hlOp*op, hlCS cs){
 void	hlOpSetCSOut(hlOp*op, hlCS cs){
 	op->cs_out = cs;
 }
+void	hlOpSetBBox(hlOp*op){
+	if(op_library[op->id].bbox_fun){
+		op_library[op->id].bbox_fun(op,&(op->bbox));
+	}
+}
 
 /*------------- OPERATION CLASS ---------- */
 
@@ -407,6 +432,7 @@ hlOpClass *hlNewOpClass(const char *name,
 	c->argc = 0;
 	c->arg = (hlArg*)malloc(HL_MAX_ARG *sizeof(hlArg));
 	memset(c->arg,0,HL_MAX_ARG*sizeof(hlArg));
+	c->bbox_fun = NULL;
 	return c;
 }
 void hlOpClassAddNum( 	hlOpClass *c,
@@ -463,4 +489,7 @@ void hlOpClassAddImage( hlOpClass *c,
 	if(c->argc > HL_MAX_ARG){
 		printf("ERROR hlOpClassAddColor(...) too much arguments to operation\n");
 	}
+}
+void hlOpClassAddBBoxFun(hlOpClass *c, void (*bbox_fun)(const hlOp *op, hlBBox *box)){
+	c->bbox_fun = bbox_fun;
 }

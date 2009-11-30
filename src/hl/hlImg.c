@@ -42,7 +42,7 @@ hlImg* hlNewImgFromSource(hlFrame *frame){
 
 /*------------- STATE -------------*/
 
-hlOp* hl_img_get_top_op(hlImg *img, hlState state){
+static hlOp* hl_img_get_top_op(hlImg *img, hlState state){
 	if(state != HL_STATE_UNSAVED && state != HL_STATE_CURRENT){
 		return (hlOp*)hlHashGet(img->statelib,state);
 	}
@@ -50,7 +50,7 @@ hlOp* hl_img_get_top_op(hlImg *img, hlState state){
 		return img->top;
 	}
 }
-hlState hl_get_new_state(){
+static hlState hl_get_new_state(void){
 	static int state = 1;
 	return state++;
 }
@@ -223,6 +223,7 @@ hlOpRef hlImgPushOp(hlImg *img, hlOp* op){
 	}else{
 		hlOpSetCSIn(op,hlFrameCS(img->source));
 	}
+	hlOpSetBBox(op);
 	insert_op(NULL,op,img->top);
 	img->state  = HL_STATE_UNSAVED;
 	img->top    = op;
@@ -291,12 +292,13 @@ void hlImgModOpEnd(hlImg *img, hlOpRef ref){
 	if(!op){
 		printf("ERROR: hlImgModOpEnd(...) operation not found.\n");
 	}else{
+		hlOpSetBBox(op);
 		hlOpLock(op);
 	}
 }
 
 /* 	hlOpRenderTile(...) 		*/
-hlTile *hl_op_render_adj(hlOp* op, bool top, int x, int y, unsigned int z){
+static hlTile *hl_op_render_adj(hlOp* op, bool top, int x, int y, unsigned int z){
 	const hlCS cs = hlOpGetCSIn(op);
 	hlTile *tile = hlOpCacheGet(op,x,y,z);
 	if(tile){ 			/*found in cache*/
@@ -343,7 +345,7 @@ hlTile *hl_op_render_adj(hlOp* op, bool top, int x, int y, unsigned int z){
 		}
 	}
 }
-hlTile *hl_op_render_blend(hlOp* op, bool top, int x, int y, unsigned int z){
+static hlTile *hl_op_render_blend(hlOp* op, bool top, int x, int y, unsigned int z){
 	const hlCS cs = hlOpGetCSIn(op);
 	hlTile *tile = hlOpCacheGet(op,x,y,z);
 	const hlTile *tileup = hlImgTileRead(	hlOpGetAllImg(op)[0],
@@ -401,7 +403,7 @@ hlTile *hl_op_render_blend(hlOp* op, bool top, int x, int y, unsigned int z){
 		}
 	}
 }
-hlTile *hl_op_render_draw(hlOp* op, bool top, int x, int y, unsigned int z){
+static hlTile *hl_op_render_draw(hlOp* op, bool top, int x, int y, unsigned int z){
 	hlCS cs = hlOpGetCSIn(op);
 	hlTile *tile = hlOpCacheGet(op,x,y,z);
 	if(tile){ 			/*found in cache*/
@@ -424,7 +426,9 @@ hlTile *hl_op_render_draw(hlOp* op, bool top, int x, int y, unsigned int z){
 		else{
 			tile = hlFrameTileCopy(op->img->source,x,y,z);
 		}
-		hlDrawOp(tile,op,x,y,z);
+		if(hlBBoxTest(&(op->bbox),x,y,(int)z)){
+			hlDrawOp(tile,op,x,y,z);
+		}
 		if(op->caching || top ){ 	/*put tile in cache*/
 			if(top){
 				hlOpCacheSet(op,tile,cs,

@@ -14,7 +14,7 @@ void hlAdjOpSkip(hlTile *t, hlOp *p){
 }
 
 /* 	hlAdjOpInvert(...) 		*/
-void hl_invert_8b(hlTile *t, const uint32_t chan){
+static void hl_invert_8b(hlTile *t, const uint32_t chan){
 	int32_t i = chan*HL_TILEWIDTH*HL_TILEWIDTH;
 	int32_t j = chan - 1;
 	uint8_t * data = HL_DATA_8B(t);
@@ -25,7 +25,7 @@ void hl_invert_8b(hlTile *t, const uint32_t chan){
 		}
 	}
 }
-void hl_invert_32b(hlTile *t, const uint32_t chan){
+static void hl_invert_32b(hlTile *t, const uint32_t chan){
 	int32_t i = chan* HL_TILEWIDTH*HL_TILEWIDTH;
 	int32_t j = chan - 1;
 	float * data = HL_DATA_32B(t);
@@ -50,7 +50,7 @@ void hlAdjOpFill(hlTile *t, hlOp *p){
 }
 
 /* 	hlAdjOpMath(...) 		*/
-uint8_t hl_add_8b( uint8_t a, int i){
+static uint8_t hl_add_8b( uint8_t a, int i){
 	int tmp = a + i;
 	if (tmp > 255)
 		return 255;
@@ -59,7 +59,7 @@ uint8_t hl_add_8b( uint8_t a, int i){
 	else
 		return (uint8_t)tmp;
 }
-uint8_t hl_mul_8b(uint8_t a, float b){
+static uint8_t hl_mul_8b(uint8_t a, float b){
 	int tmp = a*b;
 	if (tmp > 255)
 		return 255;
@@ -67,7 +67,7 @@ uint8_t hl_mul_8b(uint8_t a, float b){
 		return 0;
 	return (uint8_t) tmp;
 }
-uint8_t hl_div_8b(uint8_t a, float b){
+static uint8_t hl_div_8b(uint8_t a, float b){
 	int tmp;
 	if ( b == 0.0)
 		return 255;
@@ -77,26 +77,26 @@ uint8_t hl_div_8b(uint8_t a, float b){
 		return 0;
 	return (uint8_t) tmp;
 }
-uint8_t hl_more_8b(uint8_t a, uint8_t b){
+static uint8_t hl_more_8b(uint8_t a, uint8_t b){
 	if (a > b){
 		return a;
 	}else{
 		return b;
 	}
 }
-uint8_t hl_less_8b(uint8_t a, uint8_t b){
+static uint8_t hl_less_8b(uint8_t a, uint8_t b){
 	if (a < b){
 		return a;
 	}else{
 		return b;
 	}
 }
-uint8_t hl_pow_8b(uint8_t a, float b){
+static uint8_t hl_pow_8b(uint8_t a, float b){
 	float fa = (float)a / 255.0;
 	fa = pow(fa,b);
 	return (uint8_t)(fa*255.0);
 }
-void hl_math_8b(hlTile *t, unsigned int id, const uint32_t chan, const float * f){
+static void hl_math_8b(hlTile *t, unsigned int id, const uint32_t chan, const float * f){
 	int32_t i = chan*HL_TILEWIDTH*HL_TILEWIDTH;
 	uint8_t * data = HL_DATA_8B(t);
 	int  fact[5];
@@ -222,8 +222,8 @@ void hl_math_8b(hlTile *t, unsigned int id, const uint32_t chan, const float * f
 	}
 	return;
 }
-
-void hl_math_32b(hlTile *t, unsigned int id, const uint32_t chan, const float * f){
+/*
+static void hl_math_32b(hlTile *t, unsigned int id, const uint32_t chan, const float * f){
 	int32_t i = chan*HL_TILEWIDTH*HL_TILEWIDTH;
 	float * data = HL_DATA_32B(t);
 	while((i-=chan)>= 0){
@@ -274,7 +274,7 @@ void hl_math_32b(hlTile *t, unsigned int id, const uint32_t chan, const float * 
 			break;
 		}
 		case HL_ADJ_MOD:{
-			switch(chan){ /*doesn't work
+			switch(chan){ /doesn't work
 				case 5 : data[i+3]%= (int)f[3];
 				case 4 : data[i+2]%= (int)f[2];
 				case 3 : data[i+1]%= (int)f[1];
@@ -282,7 +282,7 @@ void hl_math_32b(hlTile *t, unsigned int id, const uint32_t chan, const float * 
 				case 1 : { 
 					data[i+ chan - 1] %= (int)f[4];
 					break;
-				}*/
+				}/
 				default : break;
 			}
 			break;
@@ -350,6 +350,7 @@ void hl_math_32b(hlTile *t, unsigned int id, const uint32_t chan, const float * 
 	}
 	return;
 }
+*/
 void hlAdjOpMath(hlTile *t, hlOp *p){
 	uint32_t chan = hlCSGetChan(hlOpGetCSIn(p));
 	float *num = hlOpGetAllValue(p);
@@ -363,7 +364,7 @@ void hlAdjOpMath(hlTile *t, hlOp *p){
 }
 
 /* CHANNEL MIXER */
-void hl_chanmix_8b(hlTile *t,unsigned int chan, const float *n){
+static void hl_chanmix_8b(hlTile *t,unsigned int chan, const float *n){
 	int32_t i = chan*HL_TILEWIDTH*HL_TILEWIDTH;
 	uint8_t *d = HL_DATA_8B(t);
 	while((i-=chan)>=0){
@@ -395,7 +396,7 @@ void hl_chanmix_8b(hlTile *t,unsigned int chan, const float *n){
 		}
 	}
 }
-void hl_chanmix_32b(hlTile *t,unsigned int chan, const float *n){
+static void hl_chanmix_32b(hlTile *t,unsigned int chan, const float *n){
 	int32_t i = chan*HL_TILEWIDTH*HL_TILEWIDTH;
 	float *d = HL_DATA_32B(t);
 	while((i-=chan)>=0){

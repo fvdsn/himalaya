@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-long int random();
+long int random(void);	/*TODO wtf do we need this ? */
 
 hlTile *hlNewTile(hlCS cs){
 	hlTile *tile;

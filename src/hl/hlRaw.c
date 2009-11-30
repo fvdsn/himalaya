@@ -11,7 +11,7 @@
 
 int ilinit = 0;
 
-long int random();
+long int random(void);	/*TODO wtf do we need this ? */
 
 /* 	hlNewRaw(...) / hlFreeRaw(...) / etc... */
 hlRaw* hlNewRaw(hlCS cs, int sizex, int sizey){
@@ -69,7 +69,7 @@ uint8_t *hlRawData(hlRaw *raw){
 	return raw->data;
 }
 /* 		hlRawFlipY(...) / hlRawFlipX(...) 	*/
-void memswitch(uint8_t *a, uint8_t *b, uint32_t n){
+static void memswitch(uint8_t *a, uint8_t *b, uint32_t n){
 	uint8_t *tmp = (uint8_t*)malloc(n);
 	memcpy((char*)tmp,(char*)a,n);
 	memcpy((char*)a,(char*)b,n);

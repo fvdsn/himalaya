@@ -2,6 +2,7 @@
 #include "hlImg.h"
 #include "hlOp.h"
 #include "hlAdjOp.h"
+#include "hlDrawOp.h"
 
 extern hlOpClass *op_library;
 
@@ -77,7 +78,7 @@ void hlInit(void){
 	hlOpClassAddNum(	c, "mix", 	"nonlinear blending factor", 1, 0,1 );
 	hlOpClassAddImage(	c, "up_image",	"the up image", 1);
 
-	/* -------------- BLENDING OPERATION ----------- */
+	/* -------------- DRAWING OPERATION ----------- */
 
 	c = hlNewOpClass(	"draw_rect",	"draw a rectangle",
 				HL_DRAW_RECT,	HL_DRAW,	NULL	);
@@ -85,6 +86,7 @@ void hlInit(void){
 	hlOpClassAddNum(	c,"pos_br", "bottom right corner position",2,0,1);
 	hlOpClassAddNum(	c,"alpha", "the opacity of the drawing",1,0,1);
 	hlOpClassAddColor(	c,"fill_color", "the fill color ",1);
+	hlOpClassAddBBoxFun(	c, hlSquareBBoxFun);
 	
 	c = hlNewOpClass(	"draw_circle",	"draw a circle",
 				HL_DRAW_CIRCLE,	HL_DRAW,	NULL	);
@@ -93,6 +95,7 @@ void hlInit(void){
 	hlOpClassAddNum(	c,"radius_out",	"outer radius"	,1,0,500);
 	hlOpClassAddNum(	c,"alpha",	"opacity of the circle",1,0,1);
 	hlOpClassAddColor(	c,"fill_color", "the fill color ",1);
+	hlOpClassAddBBoxFun(	c, hlCircleBBoxFun);
 
 }
 

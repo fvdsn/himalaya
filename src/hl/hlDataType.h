@@ -8,5 +8,7 @@ typedef struct hl_img hlImg;
 typedef struct hl_op hlOp;
 typedef struct hl_op_class hlOpClass;
 typedef struct hl_arg hlArg;
+typedef struct hl_bbox hlBBox;
+typedef struct hl_vec  hlVec;
 
 #endif

@@ -489,24 +489,24 @@ void hlRegionToRaw(hlFrame *f,hlRaw *raw,int px, int py,unsigned int z){
 		}
 	}
 }
-
-void hlRegionToRaw2(hlFrame *f,hlRaw *raw,int px, int py,unsigned int z){
+/*
+static void hlRegionToRaw2(hlFrame *f,hlRaw *raw,int px, int py,unsigned int z){
 	hlRegion r = hlNewRegion(px,py,hlRawSizeX(raw),hlRawSizeY(raw),z);
 	const int bpp = hlCSGetBpp(hlFrameCS(f));
 	uint8_t * tiledata;
-	int x; /*tile index*/
+	int x; /rx*tile indexx/
 	int y;
-	int rx; /*top left pixel in raw where current tile will be copied. >=0 */
+	int rx; /top left pixel in raw where current tile will be copied. >=0 /
 	int ry;
-	int trx;/*top left pixel in tile from where it will be copied. in [0 HL_TILEWIDTH -1]*/
+	int trx;/top left pixel in tile from where it will be copied. in [0 HL_TILEWIDTH -1]/
 	int try;
-	int mx; /*width of the line/collums in tile to be copied. in [1 HL_TILEWIDTH]*/
+	int mx; /width of the line/collums in tile to be copied. in [1 HL_TILEWIDTH]/
 	int my;
 	int i;
 	int a,b,c;
 	c = hlRawSizeX(raw)*hlRawSizeY(raw)*bpp;
 	x = r.tx;
-	/*hlRawFill(raw,&bgc)*/;
+	/hlRawFill(raw,&bgc)/;
 	hlPrintRegion(r);
 	printf("%p\n",f->bg);
 	while(x--){
@@ -558,6 +558,7 @@ void hlRegionToRaw2(hlFrame *f,hlRaw *raw,int px, int py,unsigned int z){
 		}
 	}
 }
+*/
 hlRaw *hlRawFromRegion(hlFrame *f, hlRegion r){
 	hlRaw *raw = hlNewRaw(hlFrameCS(f),r.sx,r.sy);
 	hlRegionToRaw(f,raw,r.px,r.py,r.z);

@@ -3,7 +3,7 @@
 #include "hlTile.h"
 
 /* returns the tile where the coordinate sx is included */
-int hl_txy_from_sxy(int sx){
+static int hl_txy_from_sxy(int sx){
 	if(sx >= 0)
 		return sx/HL_TILEWIDTH;
 	else

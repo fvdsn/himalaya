@@ -15,7 +15,7 @@ hlHash *hlNewHash(unsigned int size){
 	h->objcount = 0;
 	return h;
 }
-hlHNode * hl_new_hnode(unsigned int key, void * data){
+static hlHNode * hl_new_hnode(unsigned int key, void * data){
 	hlHNode * hn = (hlHNode*)malloc(sizeof(hlHNode));
 	hn->key = key;
 	hn->data = data;

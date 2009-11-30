@@ -36,6 +36,65 @@ enum hl_op_type{
 	HL_FILTER
 };
 
+struct hl_bbox{
+	int infinite;
+	/*if infinite = 1, tiles are always in it, if 0 we need to check bounds */
+	int tx;	/*inclusive top left tile */
+	int ty;
+	int btx;/*exclusive bottom right tile */
+	int bty;
+};
+/**
+ * Tests if a tile is in or out of the box. 
+ * @param box : the box.
+ * @param tx  : the x position of the tile
+ * @param ty  : they y position of the tile
+ * @param tz  : the zoom position of the tile. 0 is no zoom, 64 is maximum.
+ * @return 0 if tx is not in the box, 1 in other cases.
+ */
+int	hlBBoxTest(const hlBBox *box, int tx, int ty, int tz);
+
+struct hl_vec{
+	int opcount;	/*amount of operations in the vector */
+	int max_opcount;	/*maximum count of operations that can be put in the vector */
+	int max_veccount;
+	int *p_num_index;
+	float **p_num_vec;
+	/* if p_num_index[i] < 0 the parameter p_num[i] is constant 
+	 * for all operations in the vector. 
+	 * if p_num_index[i] >= 0 the paramater p_num[i] is vectorized.
+	 * the parameter i for the operation j can be found at
+	 * p_num_vec[i][j]
+	 *
+	 * size of p_num_vec is [max_veccount * max_opcount]
+	 */
+
+	hlFrame **cache;/*cache for the vec operations. Size is max_opcount */
+};
+/** Adds an operation on top of a vector of operation.
+ * @param vecop : an operation to vectorise, must not be null.
+ * @param op  : the pushed operation, must not be null.
+ * @return 0 if the operation has been addedd successfully to the vector, in
+ * which case the operation is freed and the bounding box of the vecop is
+ * updated. 1 if the operation could not be
+ * added to the vector, for example because of parameter mismatch. in which
+ * case the operation is not freed and must be pushed on the image in the usual
+ * way.
+ */
+int hlVecPushOp(hlOp *vecop, hlOp*op);
+/** Duplicates an operation vector.
+ * @param vec : the original operation vector
+ * @return a new operation vector with the same data as vec, 
+ * does not duplicate the caches; All the caches
+ * are set to NULL;
+ */
+hlVec *hlDupVec(const hlVec *vec);
+/** Frees an operation vector.
+ * @param vec : the operation vector to be freed. It must not be null,
+ * and must not have been freed before. Freeing the operation vector will
+ * also free the caches it contains.
+ */
+void	hlFreeVec(hlVec *vec);
 struct hl_op{
 	struct hl_op* down;
 	int locked;
@@ -64,6 +123,9 @@ struct hl_op{
 	int p_imgc;
 	hlImg **p_img;
 	hlState*p_state;
+	
+	hlBBox bbox; 	/* bounding box of the operations effects */
+	hlVec *vector; /* a vector compressing similar operations into one */
 };
 
 /**
@@ -205,6 +267,7 @@ void	hlOpSetImg(hlOp*op, int arg, int index, hlImg *img, hlState s);
 void	hlOpSetAllImg(hlOp*op, const char *argname, ... );
 void	hlOpSetCSIn(hlOp*op, hlCS cs);
 void	hlOpSetCSOut(hlOp*op, hlCS cs);
+void	hlOpSetBBox(hlOp*op);
 
 /*------------- OPERATION CLASS -------------*/
 
@@ -231,6 +294,7 @@ void hlOpClassAddImage( hlOpClass *c,
 			const char *desc,
 			int size 		);
 
+void hlOpClassAddBBoxFun(hlOpClass *c, void (*bbox_fun)(const hlOp *op, hlBBox *box));
 /*------------- OPERATION CACHE -------------*/
 
 void	hlOpCacheEnable(hlOp*op, int enabled);
