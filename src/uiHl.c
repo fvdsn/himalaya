@@ -106,7 +106,7 @@ static int uiHlMotion(uiEntity *self, float x, float y, float p){
 			hd->uptodate = 0;
 		}
 	}
-	return 0;
+	return UI_DONE;
 }
 static int uiHlClick(uiEntity *self, int button, int down, float x, float y, float p){
 	uiHlData *hd = (uiHlData*)self->data;
@@ -135,7 +135,7 @@ static int uiHlClick(uiEntity *self, int button, int down, float x, float y, flo
 		}
 	}
 	printf("%d\n",uiStateKey('z'));
-	return 0;
+	return UI_DONE;
 }
 static void uiHlDraw(uiEntity *self){
 	uiHlData*hd = (uiHlData*)self->data;
@@ -247,7 +247,6 @@ void uiHlUndo(uiEntity *hl){
 		hd->uptodate = 0;
 	}
 	printf("Current undo level : %d \n",hd->hist_cur_index);
-	return;
 }
 		
 void uiHlRedo(uiEntity *hl){
