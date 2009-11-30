@@ -408,6 +408,9 @@ static uiEntity *uiEntityPickEnt(uiEntity *ent, float posx, float posy){
 uiEntity *uiEntityPick(float posx, float posy){
 	return uiEntityPickEnt(ent_screen,posx,posy);
 }
+uiEntity *uiEntityGetActive(){
+	return ent_active;
+}
 void uiEventMouseButton(int button, int down, float x, float y, float pressure){
 	uiEntity *ent = uiEntityPick(x,y);
 	printf("click...\n");

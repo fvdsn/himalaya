@@ -39,13 +39,34 @@ void uiNewWindow(const char *name, int sizex, int sizey){
 	window_size_y = sizey;
 }
 static void uiKeyDown(SDL_Event *event){
-	char key = (char)(event->key.keysym.sym);
-	uiStateSetKey(key,1);
-	printf("%c:%d\n",key,(int)key);
+	int key = event->key.keysym.sym;
+	switch(key){
+		case SDLK_LCTRL: uiStateSetMod(UI_CTRL_L,UI_KEY_DOWN);break;
+		case SDLK_RCTRL: uiStateSetMod(UI_CTRL_R,UI_KEY_DOWN);break;
+		case SDLK_LSHIFT: uiStateSetMod(UI_SHIFT_L,UI_KEY_DOWN);break;
+		case SDLK_RSHIFT: uiStateSetMod(UI_SHIFT_R,UI_KEY_DOWN);break;
+		case SDLK_LALT: uiStateSetMod(UI_ALT_L,UI_KEY_DOWN);break;
+		case SDLK_RALT: uiStateSetMod(UI_ALT_R,UI_KEY_DOWN);break;
+		case ' ': uiStateSetMod(UI_SPACE,UI_KEY_DOWN);
+		default:
+			uiStateSetKey(key,UI_KEY_DOWN);
+	}
+	printf("Key '%d' DOWN\n",key);
 }
 static void uiKeyUp(SDL_Event *event){
-	char key = (char)(event->key.keysym.sym);
-	uiStateSetKey(key,0);
+	int key = event->key.keysym.sym;
+	switch(key){
+		case SDLK_LCTRL: uiStateSetMod(UI_CTRL_L,UI_KEY_UP);break;
+		case SDLK_RCTRL: uiStateSetMod(UI_CTRL_R,UI_KEY_UP);break;
+		case SDLK_LSHIFT: uiStateSetMod(UI_SHIFT_L,UI_KEY_UP);break;
+		case SDLK_RSHIFT: uiStateSetMod(UI_SHIFT_R,UI_KEY_UP);break;
+		case SDLK_LALT: uiStateSetMod(UI_ALT_L,UI_KEY_UP);break;
+		case SDLK_RALT: uiStateSetMod(UI_ALT_R,UI_KEY_UP);break;
+		case ' ': uiStateSetMod(UI_SPACE,UI_KEY_UP);
+		default:
+			uiStateSetKey(key,UI_KEY_UP);
+	}
+	printf("Key '%d' UP\n",key);
 }
 static void uiResize(int x, int y){
 	window_size_x = x;
@@ -85,7 +106,12 @@ void uiMainLoop(void){
 					break;
 			}
 		}
-		uiEventProcess();
+		/* collect all events to create an accurate state representation
+		 * needed for actions */
+		uiStateProcess();
+		/* launch all actions matching the current state */
+		//uiActionProcess();
+		/*draw the updated view */
 		uiEntityCleanAll();
 		uiWindowDrawBegin();
 		uiEntityLayoutAll();

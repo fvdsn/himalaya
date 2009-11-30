@@ -1,10 +1,11 @@
 #include<stdlib.h>
+#include<string.h>
 #include<stdio.h>
 #include "uiCore.h"
 
 #define UI_MAX_EVENT 1000
 #define UI_MAX_LISTENER 1000
-
+/*
 static uiEntity *listener[UI_MAX_LISTENER];
 static int listener_channel[UI_MAX_LISTENER];
 static int listener_type[UI_MAX_LISTENER];
@@ -79,7 +80,62 @@ void uiEventProcess(void){
 		}
 		i++;
 	}
-	/*TODO free vent data */
+	/x*TODO free vent data *x/
 	event_count = 0;
 }
-				
+*/				
+#define UI_MAX_ACTION 256
+static uiAction action[UI_MAX_ACTION];
+static int action_count = 0;
+
+void uiActionRegister(const char *name,
+		int entity_type,
+		const char *state_name,
+		int state_value,
+		int modkey,
+		char hotkey,
+		int  mouse_button,
+		int (*action_start)(uiAction *self, uiEntity *active), 
+		int (*action_hold)(uiAction *self, uiEntity *active),
+		int (*action_end)(uiAction *self, uiEntity *active) ){
+	if(action_count >= UI_MAX_ACTION){
+		printf("WARNING : failed to register action, max action reached \n");
+	}
+	strncpy(action[action_count].name,name,UI_NAME_LENGTH); 
+	/*TODO put '\0' in string if state_name is null */
+	strncpy(action[action_count].state_name,state_name,UI_NAME_LENGTH); 
+	action[action_count].entity_type = entity_type;
+	action[action_count].state_value = state_value;
+	action[action_count].hotkey = hotkey;
+	action[action_count].modkey = modkey;
+	action[action_count].mouse_button = mouse_button;
+	action[action_count].action_start = action_start; /*TODO hold, end */
+}
+void uiActionProcess(void){
+	int i = action_count;
+	int process = 1;
+	
+	/*process actions not related to any entity*/
+	while(i--){
+		process = 1;
+		if(	action[i].entity_type != UI_ENT_ANY ){
+			continue;
+		}
+		if(	action[i].hotkey != UI_KEY_ANY 
+				&& uiStateKey(action[i].hotkey) != UI_KEY_DOWN){
+			continue;
+		}
+		/*TODO MOD_ANY won't work with zero mod pressed */
+		if( uiStateMod(action[i].modkey) != UI_KEY_DOWN ){
+			continue;
+		}
+		if( action[i].mouse_button != UI_MOUSE_BUTTON_ANY &&
+				uiStateMouse(action[i].mouse_button) != UI_KEY_DOWN){
+			continue;
+		}
+		/*
+		if(uiStateKeyStatus(action[i].ho
+		*/
+	}
+	
+}

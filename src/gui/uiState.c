@@ -3,11 +3,15 @@
 #include <string.h>
 #include "uiCore.h"
 
+#define UI_KEY_COUNT 256
 #define UI_MAX_STATE_COUNT 1000
-
-static int key_state[256];
-static int mod_key_state[UI_MOD_KEY_COUNT];
-static int mouse_button_state[UI_MOD_KEY_COUNT];
+static int mod_key_state;
+static int key_state[UI_KEY_COUNT];	/*the state in this frame */
+static int key_state_p[UI_KEY_COUNT];	/*the state in the previous frame*/
+static int key_state_h[UI_KEY_COUNT];	/*if this frame is a press, release or holding of a key*/
+static int mouse_button_state[UI_MOUSE_BUTTON_COUNT];
+static int mouse_button_state_p[UI_MOUSE_BUTTON_COUNT];
+static int mouse_button_state_h[UI_MOUSE_BUTTON_COUNT];
 static float mouse_x;
 static float mouse_y;
 static float mouse_pressure;
@@ -29,6 +33,36 @@ static uiState* uiStateGet(const char *name){
 	strncpy(state[i].name,name,UI_NAME_LENGTH);
 	return state + i;
 }
+void uiStateProcess(){
+	int i = UI_KEY_COUNT;
+	/*setting keyboard state */
+	while(i--){
+		if ( key_state[i] == UI_KEY_DOWN && key_state_p[i] == UI_KEY_UP){
+			key_state_h[i] = UI_KEY_PRESS;
+			printf("Key '%d' PRESS\n",i);
+		}else if ( key_state[i] == UI_KEY_UP && key_state_p[i] == UI_KEY_DOWN){
+			key_state_h[i] = UI_KEY_RELEASE;
+			printf("Key '%d' RELEASE\n",i);
+		}else{
+			if(key_state_h[i] != UI_KEY_HOLD){
+				key_state_h[i] = UI_KEY_HOLD;
+				printf("Key '%d' HOLD\n",i);
+			}
+		}
+		key_state_p[i] = key_state[i];
+	}
+	/*setting mouse state */
+	i = UI_MOUSE_BUTTON_COUNT;
+	while(i--)
+		if ( mouse_button_state[i] == UI_KEY_DOWN && mouse_button_state_p[i] == UI_KEY_UP){
+			mouse_button_state_h[i] = UI_KEY_PRESS;
+		}else if ( mouse_button_state[i] == UI_KEY_UP && mouse_button_state_p[i] == UI_KEY_DOWN){
+			mouse_button_state_h[i] = UI_KEY_RELEASE;
+		}else{
+			mouse_button_state_h[i] = UI_KEY_HOLD;
+		}
+		mouse_button_state_p[i] = mouse_button_state[i];
+	}
 void uiStateSetValue(const char *name, int value){
 	uiStateGet(name)->value = value;
 }
@@ -41,11 +75,19 @@ int  uiStateGetValue(const char *name){
 uiEntity* uiStateGetEnt(const char *name){
 	return uiStateGet(name)->ent;
 }
-void uiStateSetKey(char key, int value){
-	key_state[(int)key] = value;
+void uiStateSetKey(int key, int value){
+	if(key >= 0 && key < 256){
+		key_state[key] = value;
+	}
 }
 void uiStateSetMod(int mod, int value){
-	mod_key_state[mod] = value;
+	if(value){
+		printf("Mod '%d' ACTIVATED \n",mod); 
+		mod_key_state |= mod;
+	}else{
+		printf("Mod '%d' CANCELLED \n",mod); 
+		mod_key_state &= ~mod;
+	}
 }
 void uiStateSetMouse(int button, int value){
 	float x,y,p;
@@ -69,14 +111,49 @@ void uiStateSetMousePos(float x, float y, float pressure){
 		uiEventMouseMotion(x,y,pressure);
 	}
 }
-int  uiStateKey(char key){
-	return key_state[(int)key];
+int  uiStateKey(int key){
+	if(key >= 0 && key < 256){
+		return key_state[key];
+	}else{
+		printf("WARNING : could not get key state for key #%d\n",key);
+		return UI_KEY_UP;
+	}
 }
 int  uiStateMod(int mod){
-	return mod_key_state[mod];
+	switch(mod){
+		case UI_SHIFT:
+			return uiStateMod(UI_SHIFT_L | UI_SHIFT_R);
+		case UI_CTRL:
+			return uiStateMod(UI_CTRL_L | UI_CTRL_R);
+		case UI_ALT:
+			return uiStateMod(UI_ALT_L | UI_ALT_R);
+		default: 
+			return mod_key_state & mod;
+	}
 }
 int  uiStateMouse(int button){
-	return mouse_button_state[button];
+	if(button >= 0 && button < UI_MOUSE_BUTTON_COUNT){
+		return mouse_button_state[button];
+	}else{
+		printf("WARNING : could not get button state status for mouse button #%d\n",button);
+		return UI_KEY_UP;
+	}
+}
+int  uiStateKeyStatus(int key){
+	if(key >= 0 && key < UI_KEY_COUNT){
+		return key_state_h[key];
+	}else{
+		printf("WARNING : could not get key state status for key #%d\n",key);
+		return UI_KEY_HOLD;
+	}
+}
+int  uiStateMouseStatus(int button){
+	if(button >= 0 && button < UI_MOUSE_BUTTON_COUNT){
+		return mouse_button_state_h[button];
+	}else{
+		printf("WARNING : could not get key state status for mouse button #%d\n",button);
+		return UI_KEY_HOLD;
+	}
 }
 void  uiStateMousePos(float *x, float *y, float *pressure){
 	if(x){

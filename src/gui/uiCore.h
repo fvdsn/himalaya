@@ -10,8 +10,15 @@ typedef long   uiTime;
 typedef struct uiEvent_s uiEvent;
 typedef struct uiEntity_s uiEntity;
 typedef struct uiState_s uiState;
+typedef struct ui_action_s uiAction;
 
+/**
+ * Type of the entities, if you want to create a new widget,
+ * it is best to add your type here
+ */
 enum ui_entity_type{
+	UI_ENT_NONE,
+	UI_ENT_ANY,
 	UI_ENT_SCREEN,
 	UI_ENT_RECT,
 	UI_ENT_PANEL,
@@ -25,12 +32,15 @@ enum ui_entity_type{
 	UI_ENT_TABENV,
 	UI_ENT_DIV,
 	UI_ENT_DISPLAY,
-	UI_ENT_HL
+	UI_ENT_HL,
+	UI_ENT_COUNT
 };
-
+/**
+ * The entities align directions, relative to parent
+ */
 enum ui_align{
-	UI_ALIGN_FIXED,
-	UI_ALIGN_CENTER,
+	UI_ALIGN_FIXED,		/*keep current position*/
+	UI_ALIGN_CENTER,	
 	UI_ALIGN_NORTH,
 	UI_ALIGN_EAST,
 	UI_ALIGN_SOUTH,
@@ -52,7 +62,7 @@ typedef struct ui_string{
 	float font_size;
 	int font_weight;
 	int font_slant;
-	float px;
+	float px;	/*position of the text in the buffer ? TODO document this */
 	float py;
 	int sx;		/*size of the buffer*/
 	int sy;
@@ -63,41 +73,39 @@ typedef struct ui_string{
 
 struct uiEntity_s{
 	char name[UI_NAME_LENGTH];
-	int type;
-	int subtype;
-	int uid;
+	int type;	
 	int alive;	/*if not it should be freed asap*/
 	int active;	/* TODO if is the active entity */
 	int display;	/* 0 do not draw or send event  */
-	int enabled;
+	int enabled;	/* 0 : draw grayed out, do not send event */
 	uiEntity *parent;
 	uiList *child;
-	uiString *namestring;
+	uiString *namestring;	/*string with the name of the entity */
 
 	/* callbacks */
-	void (*draw)(uiEntity *self);
-	int (*event)(uiEntity *self, uiEvent *event);
-	int (*click)(uiEntity *self, int button, int down, float x, float y, float pressure);
-	int (*motion)(uiEntity *self,float x, float y, float pressure);
+	void (*draw)(uiEntity *self);	/*called when drawing */
+	int (*event)(uiEntity *self, uiEvent *event);	/*called when receiving an event */
+	int (*click)(uiEntity *self, int button, int down, float x, float y, float pressure); /*called when the mouse clicks*/
+	int (*motion)(uiEntity *self,float x, float y, float pressure);/*called when the mouse moves over the entity*/
 	
 	/* drawing */
 	int visible;
-	float posx;
+	float posx;		/*position relative to parent in pixels. X is right, Y is up */
 	float posy;
 	float posz;
-	float sizex;
+	float sizex;		/*size of the entity in pixels */
 	float sizey;
 	float inner_sizex;	/*for region widgets : description of the inside area */
 	float inner_sizey;
 	float inner_posx;
 	float inner_posy;
-	float dx;	/*positionning of the child widgets*/
+	float dx;		/*positionning of the child widgets*/
 	float dy;
-	float view_sizex; /*the part of the entity that is displayed in [0,sizex]*/
+	float view_sizex;	/*the part of the entity that is displayed in [0,sizex]*/
 	float view_sizey;
-	float view_posx; /*in [0,sizex]*/
+	float view_posx; 	/*in [0,sizex]*/
 	float view_posy;
-	float color[4];
+	float color[4];		/* for various uses */
 
 	/*flow and alignment*/
 	float margin_out;	/* outer margin in pixel */
@@ -106,8 +114,8 @@ struct uiEntity_s{
 	float margin_in_south;
 	float margin_in_west;
 	
-	int resizable_x;
-	float rel_sizex;
+	int resizable_x;	/* 0 : do not resize or fit this entity */
+	float rel_sizex;	/* the ratio of parent entity size to this entity's size */
 	
 	int resizable_y;
 	float rel_sizey;
@@ -119,16 +127,52 @@ struct uiEntity_s{
 
 	/*state*/
 	int mouseover;		/*the mouse is over, or dragging from the entity*/
-	long mouse_over_time;
+	long mouse_over_time;	/*TODO not done yet */
 	long mouse_leave_time;
 	long mouse_click_time;
-
+	
+	/* for the entity's private data */
 	void *data;
 };
 
+/* for events callback, define if we need to continue sending the event
+ * to callbacks with lower priority
+ */
+#define UI_DONE 0	
+#define UI_CONTINUE 1
+
+/** Allocates memory for a new entity.
+ * @param name  the name of the entity (max UI_NAME_LENGTH)
+ * @param type	the type of the new entity (see enum ui_entity_type)
+ * @return a new entity with all fields other than name and type set to 0 or
+ * NULL
+ */
 uiEntity * uiEntityNew(const char *name, int type);
+/** Changes the position of the bottom left corner of the entity, relative to
+ * the parent entity position.
+ * @param ent The entity, must not be null
+ * @param posx the horizontal position in pixels relative to parent entity. right is
+ * postive.
+ * @param posy the vertical position in pixels relative to parent entity, up is positive.
+ */
 void	uiEntitySetPos(uiEntity *ent, float posx, float posy);
+/** Changes the size of the entity.
+ * @param ent The entity, must not be null
+ * @param posx the horizontal size in pixels of the entity. ( >0.0 )
+ * @param posy the vertical size in pixels of entity, ( >0.0 )
+ */
 void 	uiEntitySetSize(uiEntity *ent, float sizex, float sizey);
+/** Changes the margin of the entity.
+ * @param ent The entity, must not be null
+ * @param size the size of the margin, see enum ui_margin
+ * @param margin The space between this entity and other entities, or the
+ * parent entity bounding box, in pixels. ( >= 0.0 )
+ */
+void	uiEntitySetMargin(uiEntity *ent, enum ui_margin side, float margin);
+/** Frees the entity and it's private data
+ * TODO : create a free(ent) callback to free local data.
+ * @param : the entity, must not be NULL.
+ */
 void    uiEntityFree(uiEntity *ent);
 void 	uiEntityCleanAll(void);
 void 	uiEntityDrawAll(void);
@@ -143,10 +187,10 @@ void	uiEntityMousePos(uiEntity *ent, float *x, float *y,float *pressure);
 void	uiEntityAlign(uiEntity *ent, enum ui_align dir);
 void 	uiEntityFitX(uiEntity *ent, float relsize);
 void 	uiEntityFitY(uiEntity *ent, float relsize);
-void	uiEntitySetMargin(uiEntity *ent, enum ui_margin side, float px);
 void	uiScreenSet(uiEntity *ent);
 
 uiEntity * uiEntityPick(float posx, float posy);
+uiEntity * uiEntityGetActive(void);
 
 struct uiState_s{
 	char name[UI_NAME_LENGTH];
@@ -157,51 +201,98 @@ struct uiState_s{
 #define UI_KEY_UP 0
 #define UI_KEY_DOWN 1
 
+#define UI_KEY_PRESS 	0
+#define UI_KEY_HOLD 	1
+#define UI_KEY_RELEASE 	2 
+
 enum ui_mod_key{
-	UI_CTRL_L,
-	UI_CTRL_R,
-	UI_SHIFT_L,
-	UI_SHIFT_R,
-	UI_ALT,
-	UI_SPACE,
-	UI_MOD_KEY_COUNT
+	UI_MOD_NONE	= 0,
+	UI_CTRL_L 	= 1,
+	UI_CTRL_R 	= 2,
+	UI_CTRL		= 4,
+	UI_SHIFT_L 	= 8,
+	UI_SHIFT_R	= 16,
+	UI_SHIFT	= 32,
+	UI_ALT_L	= 64,
+	UI_ALT_R	= 128,
+	UI_ALT		= 256,
+	UI_SPACE	= 512,
+	UI_MOD_ANY	= ~0
 };
 enum ui_mouse_button{
 	UI_MOUSE_BUTTON_1,
 	UI_MOUSE_BUTTON_2,
 	UI_MOUSE_BUTTON_3,
+	UI_MOUSE_BUTTON_ANY,
+	UI_MOUSE_BUTTON_NONE,
 	UI_MOUSE_BUTTON_COUNT
 };
-void uiStateSetValue(const char *name, int down);
+void uiStateProcess(void);
+void uiStateSetValue(const char *name, int value);
 void uiStateSetEnt(const char *name, uiEntity *ent);
 int  uiStateGetValue(const char *name);
 uiEntity* uiStateGetEnt(const char *name);
-void uiStateSetKey(char key, int down);
+void uiStateSetKey(int key, int down);
 void uiStateSetMod(int mod, int down);
 void uiStateSetMouse(int button, int down);
 void uiStateSetMousePos(float x, float y,float pressure);
-int  uiStateKey(char key);
+int  uiStateKey(int key);
 int  uiStateMod(int Mod);
 int  uiStateMouse(int button);
+int  uiStateKeyStatus(int key);
+int  uiStateMouseStatus(int button);
 void  uiStateMousePos(float *x, float *y,float *pressure);
 void  uiStateMouseDelta(float *dx, float *dy,float *dp);
 
-struct uiEvent_s{
+/*struct uiEvent_s{
 	int type;
 	uiEntity * source;
 	int channel;
 	int datasize;
 	void *data;
-};
+};*/
 
-void uiEventSend(uiEntity *src, int channel, int type, int datasize, void *data);
 void uiEventMouseButton(int button, int down , float x, float y, float pressure);
 void uiEventMouseMotion(float x, float y, float pressure);
 void uiEventMouseDrag(int button, float x, float y, float dx, float dy, float p1, float p2);
-void uiEventListen(uiEntity *ent, int channel, int type );
+/*void uiEventListen(uiEntity *ent, int channel, int type );
+void uiEventSend(uiEntity *src, int channel, int type, int datasize, void *data);
 void uiEventForget(uiEntity *ent);
 void uiEventProcess(void);
 void uiEventCallback(int channel, int type, int (*callback)(uiEvent *e));
+*/
+
+#define UI_KEY_ANY (char)(0)
+
+struct ui_action_s{
+	char name[UI_NAME_LENGTH];
+	/* theses represent the various properties in the ui state that
+	 * must match for the action to be triggered
+	 */
+	int  entity_type;
+	char state_name[UI_NAME_LENGTH];
+	char state_value;
+	char hotkey;
+	int  modkey;
+	int  mouse_button;
+	int (*action_start)(uiAction *self, uiEntity *active);
+	int (*action_hold)(uiAction *self, uiEntity *active);
+	int (*action_end)(uiAction *self, uiEntity *active);
+};
+
+void uiActionRegister(const char *name,
+		int entity_type,
+		const char *state_name,
+		int state_value,
+		int modkey,
+		char hotkey,
+		int  mouse_button,
+		int (*action_start)(uiAction *self, uiEntity *active), 
+		int (*action_hold)(uiAction *self, uiEntity *active), 
+		int (*action_end)(uiAction *self, uiEntity *active) );
+
+void uiActionProcess(void);
+
 
 enum color_type{
 	UI_BG_COLOR,
