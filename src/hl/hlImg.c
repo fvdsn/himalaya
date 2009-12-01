@@ -8,13 +8,7 @@
 #include "hlBlendOp.h"
 #include "hlDrawOp.h"
 
-struct hl_img{
-	struct hl_op* top; 	/* last operation */
-	hlState state;	/* unsaved, or the saved state id */
-	hlRegion region;	
-	hlHash * statelib; 	/* to quickly find state top op */
-	hlFrame * source; 	/* original image data*/
-};
+extern int num_img;
 
 hlImg* hlNewImg(hlColor color,int sx, int sy){
 	hlImg* img = (hlImg*)malloc(sizeof(hlImg));
@@ -23,6 +17,7 @@ hlImg* hlNewImg(hlColor color,int sx, int sy){
 	img->statelib 	= hlNewHash(1009);
 	img->state 	= HL_STATE_UNSAVED;
 	img->source 	= hlNewFrame(color,sx,sy);
+	num_img++;
 	return img;
 }
 
@@ -37,6 +32,7 @@ hlImg* hlNewImgFromSource(hlFrame *frame){
 	img->state 	= HL_STATE_UNSAVED;
 	img->source 	= frame;
 	hlFrameMipMap(frame);	/*TODO remove that requirement */ 
+	num_img++;
 	return img;
 }
 
@@ -220,14 +216,19 @@ hlOpRef hlImgPopOp(hlImg *img){
 hlOpRef hlImgPushOp(hlImg *img, hlOp* op){
 	if(img->top){
 		hlOpSetCSIn(op,hlOpGetCSIn(img->top));
+		hlOpSetBBox(op);
+		if(hlVecPushOp(img->top,op)){
+			return img->top->ref;
+		}
 	}else{
+		hlOpSetBBox(op);
 		hlOpSetCSIn(op,hlFrameCS(img->source));
 	}
-	hlOpSetBBox(op);
 	insert_op(NULL,op,img->top);
 	img->state  = HL_STATE_UNSAVED;
 	img->top    = op;
 	op->img = img;
+	hlStatPrint();
 	return op->ref;
 }
 /**
@@ -305,7 +306,7 @@ static hlTile *hl_op_render_adj(hlOp* op, bool top, int x, int y, unsigned int z
 		if(top){
 			return tile;
 		}
-		else { 
+		else {/* 
 			tile = hlTileDup(tile,cs);
 			if (op->caching){
 				return tile;
@@ -313,6 +314,13 @@ static hlTile *hl_op_render_adj(hlOp* op, bool top, int x, int y, unsigned int z
 			else{
 				hlOpCacheRemove(op,x,y,z);
 				return tile;
+			}
+			*/
+			if (op->caching){
+				return  hlTileDup(tile,cs);
+			}
+			else{
+				return hlOpCacheRemove(op,x,y,z);
 			}
 		}
 	}
@@ -403,9 +411,80 @@ static hlTile *hl_op_render_blend(hlOp* op, bool top, int x, int y, unsigned int
 		}
 	}
 }
+static hlTile* hl_op_render_draw_vector(hlOp *op, int opindex,  bool top, int x, int y, unsigned int z){
+	hlCS cs = hlOpGetCSIn(op);
+	hlTile *tile = NULL;
+	hlVec *v = op->vector;
+
+	if(opindex < 0){
+		if(op->down){
+			return  hlOpRenderTile(op->down,0,x,y,z);
+		}else{
+			return hlFrameTileCopy(op->img->source,x,y,z);
+		}
+	}	
+
+	tile = hlVecCacheGet(v,opindex,x,y,z);
+	if(tile){
+		if(top && opindex == v->opcount-1){
+			return tile;
+		}else{
+			if(op->caching && opindex == v->opcount-1) {
+				return hlTileDup(tile,cs);
+				//return tile;
+			}else{
+				return hlVecCacheRemove(v,opindex,x,y,z);
+			}
+		}
+	}
+	/* tile was not in cache, we need to get the tile of the operation below to
+	 * draw on it. But if we are at the top index of the vector and the
+	 * tile is outside the vector drawing bounding box, there is nothing to
+	 * render and we directly get the tile of the operation below
+	 */
+	if(opindex == v->opcount -1 && !hlBBoxTest(&(op->bbox),x,y,(int)z)){
+		if(op->down){
+			tile = hlOpRenderTile(op->down,0,x,y,z);
+		}else{
+			tile = hlFrameTileCopy(op->img->source,x,y,z);
+		}
+	}else{
+		/* we could not skip the vector, we need to get the tile from
+		 * lower vector index */
+		tile = hl_op_render_draw_vector(op,opindex-1,0,x,y,z);
+		/*now we can draw on our tile !*/
+		hlDrawVec(tile,op,opindex,x,y,z);
+	}
+	/* at this point we have a tile not yet in cache anywhere in the
+	 * vector. maybe we need to put it in cache */
+	if(opindex == v->opcount -1 && (op->caching || top)){
+		if(top){
+			hlVecCacheSet(v,opindex,tile,cs,
+						hlImgSizeX(op->img,0),
+						hlImgSizeY(op->img,0),
+						x,y,z);
+			return tile;
+		}else{
+			hlVecCacheSet(v,opindex,tile,cs,
+						hlImgSizeX(op->img,0),
+						hlImgSizeY(op->img,0),
+						x,y,z);
+			return hlTileDup(tile,cs);
+			//return tile;
+		}
+	}else{
+		return tile;
+	}
+}
 static hlTile *hl_op_render_draw(hlOp* op, bool top, int x, int y, unsigned int z){
 	hlCS cs = hlOpGetCSIn(op);
-	hlTile *tile = hlOpCacheGet(op,x,y,z);
+	hlTile *tile = NULL;
+	if(op->vector){
+		return hl_op_render_draw_vector(op,
+				op->vector->opcount-1,
+				top,x,y,z);
+	}
+	tile = hlOpCacheGet(op,x,y,z);
 	if(tile){ 			/*found in cache*/
 		if(top){
 			return tile;
@@ -560,8 +639,14 @@ void hlImgRenderRegion(hlImg *img, hlRegion r, hlState state){
 
 hlFrame * hlImgReadFrame(hlImg *img, hlState state){
 	hlOp* top = hl_img_get_top_op(img,state);
+	hlVec *v  = NULL;
 	if(top){
-		return top->cache;
+		if(top->vector){
+			v = top->vector;
+			return v->cache[v->opcount-1];
+		}else{
+			return top->cache;
+		}
 	}
 	else{
 		return img->source;

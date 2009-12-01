@@ -10,7 +10,15 @@
 #include "hlRegion.h"
 
 
+struct hl_img{
+	struct hl_op* top; 	/* last operation */
+	hlState state;	/* unsaved, or the saved state id */
+	hlRegion region;	
+	hlHash * statelib; 	/* to quickly find state top op */
+	hlFrame * source; 	/* original image data*/
+};
 void hlInit(void);
+void hlStatPrint(void);
 
 /**
  * Creates Img with bg color 'color', size sx,sy in pixels,

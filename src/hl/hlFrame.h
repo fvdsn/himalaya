@@ -13,6 +13,27 @@
 #define HL_MAX_TILE_LEVEL 32
 
 typedef struct hl_frame hlFrame;
+typedef struct hl_node{
+	uint32_t x;
+	uint32_t y;
+	hlTile *tile;
+	struct hl_node* tl;
+	struct hl_node* tr;
+	struct hl_node* br;
+	struct hl_node* bl;
+}hlNode;
+
+struct hl_frame{
+	hlRegion region;	/*when exporting to raw, export this region*/
+	hlCS cs;
+	hlColor color;		/*background color*/
+	hlTile* bg;		/*tile filled with background color*/
+	unsigned int depth; /* root node is depth 0 */
+	struct hl_node *tlroot; /*(tx,ty) < 0*/
+	struct hl_node *trroot; /*(tx>=0, ty <0)*/
+	struct hl_node *brroot; /*(tx,ty) >=0*/
+	struct hl_node *blroot; /*(tx<0, ty>=0)*/
+};
 /* WHAT IS A FRAME : 
  * hlFrame is a structure that contains bitmap data.
  * it doesn't have any size limits, and can return

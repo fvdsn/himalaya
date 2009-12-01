@@ -14,7 +14,7 @@ void hlSquareBBoxFun(const hlOp *op, hlBBox *box){
 	box->ty = (int)(floorf(op->p_num[1]/HL_TILEWIDTH));
 	box->btx = (int)(floorf(op->p_num[2]/HL_TILEWIDTH)) + 1;
 	box->bty = (int)(floorf(op->p_num[3]/HL_TILEWIDTH)) + 1;
-	printf("BBox : Rect : [%d,%d | %d,%d]\n",box->tx,box->ty,box->btx,box->bty);
+	//printf("BBox : Rect : [%d,%d | %d,%d]\n",box->tx,box->ty,box->btx,box->bty);
 }
 static void hl_draw_rect_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, int ty, unsigned int tz){
 	uint8_t* data = HL_DATA_8B(a);
@@ -58,7 +58,7 @@ void hlCircleBBoxFun(const hlOp *op, hlBBox *box){
 	box->ty  = (int)(floorf((cy-r)/HL_TILEWIDTH));
 	box->btx = (int)(floorf((cx+r)/HL_TILEWIDTH)) + 1;
 	box->bty = (int)(floorf((cy+r)/HL_TILEWIDTH)) + 1;
-	printf("BBox : Circle : [%d,%d | %d,%d]\n",box->tx,box->ty,box->btx,box->bty);
+	//printf("BBox : Circle : [%d,%d | %d,%d]\n",box->tx,box->ty,box->btx,box->bty);
 }
 
 static void hl_draw_circle_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, int ty, unsigned int tz){
@@ -127,6 +127,26 @@ void hlDrawOp(hlTile *a, hlOp *p, int tx, int ty, unsigned int tz){
 	hlCS cs = hlColorGetCS(c);
 	int chan = hlCSGetChan(cs);
 	float *num = hlOpGetAllValue(p);
+	switch(hlCSGetBpc(cs)){
+		case HL_8B:
+		hl_draw_8b(a,id,c,chan,num,tx,ty,tz);
+		break;
+		case HL_32B:
+		default: 
+		return;
+
+	}
+}
+void hlDrawVec(hlTile *a, hlOp *p, int opindex, int tx, int ty, unsigned int tz){
+	int id = hlOpGetId(p);
+	hlColor *c = hlOpGetAllColor(p);
+	hlCS cs = hlColorGetCS(c);
+	int chan = hlCSGetChan(cs);
+	float *num = p->vector->p_num_vec[opindex];
+	if(opindex <0 || opindex >= p->vector->opcount){
+		printf("WARNING: opindex out of bounds : index%d, opcount:%d\n",
+				opindex,p->vector->opcount);
+	}
 	switch(hlCSGetBpc(cs)){
 		case HL_8B:
 		hl_draw_8b(a,id,c,chan,num,tx,ty,tz);

@@ -4,27 +4,10 @@
 #include <string.h>
 #include "hlFrame.h"
 
-typedef struct hl_node{
-	uint32_t x;
-	uint32_t y;
-	hlTile *tile;
-	struct hl_node* tl;
-	struct hl_node* tr;
-	struct hl_node* br;
-	struct hl_node* bl;
-}hlNode;
+extern int num_frame;
+extern int num_frame_node;
 
-struct hl_frame{
-	hlRegion region;	/*when exporting to raw, export this region*/
-	hlCS cs;
-	hlColor color;		/*background color*/
-	hlTile* bg;		/*tile filled with background color*/
-	unsigned int depth; /* root node is depth 0 */
-	struct hl_node *tlroot; /*(tx,ty) < 0*/
-	struct hl_node *trroot; /*(tx>=0, ty <0)*/
-	struct hl_node *brroot; /*(tx,ty) >=0*/
-	struct hl_node *blroot; /*(tx<0, ty>=0)*/
-};
+
 
 /*	hlNewFrame(...)		*/
 static unsigned int hl_depth_from_size(int ptx, int pty, int tx, int ty){
@@ -50,6 +33,7 @@ static hlNode* hl_new_node(uint32_t x, uint32_t y){
 	memset(n,0,sizeof(hlNode));
 	n->x = x;
 	n->y = y;
+	num_frame_node++;
 	return n;
 }
 hlFrame* hlNewFrame(hlColor bgcol, int sx, int sy){
@@ -67,6 +51,7 @@ hlFrame* hlNewFrame(hlColor bgcol, int sx, int sy){
 	f->cs = hlColorGetCS(&bgcol);
 	f->bg = hlNewTile(hlColorGetCS(&bgcol));
 	hlTileFill(f->bg,&bgcol);
+	num_frame++;
 	return f;
 }
 
@@ -80,6 +65,7 @@ static void hl_free_node_tree(hlNode *n){
 		if(n->tile){
 			hlFreeTile(n->tile);
 		}
+		num_frame_node--;
 		free(n);
 	}
 }
@@ -94,12 +80,15 @@ void hlFramePurge(hlFrame *f){
 	f->blroot = hl_new_node(0,0);
 }
 void hlFreeFrame(hlFrame *f){
-	hl_free_node_tree(f->tlroot);
-	hl_free_node_tree(f->trroot);
-	hl_free_node_tree(f->brroot);
-	hl_free_node_tree(f->blroot);
-	hlFreeTile(f->bg);
-	free(f);
+	if(f){
+		hl_free_node_tree(f->tlroot);
+		hl_free_node_tree(f->trroot);
+		hl_free_node_tree(f->brroot);
+		hl_free_node_tree(f->blroot);
+		hlFreeTile(f->bg);
+		num_frame--;
+		free(f);
+	}
 }
 
 /* 	hlFrameSizeXY(..) / hlFrameTileXY(..) / etc ... */

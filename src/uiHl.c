@@ -94,7 +94,6 @@ static int uiHlMotion(uiEntity *self, float x, float y, float p){
 			dpx -= dstepx;
 			dpy -= dstepy;
 			dplength = sqrtf(dpx*dpx + dpy*dpy);
-			printf("Paint continues at [%f,%f]\n", hd->lpx, hd->lpy);
 			op = hlNewOp(HL_DRAW_CIRCLE);
 			hlOpSetAllValue(op,"pos_center",hd->lpx +rpx,hd->lpy +rpy);
 			hlOpSetAllValue(op,"radius_in",radius*(1.0f-softness));

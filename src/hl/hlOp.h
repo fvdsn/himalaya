@@ -53,23 +53,19 @@ struct hl_bbox{
  * @return 0 if tx is not in the box, 1 in other cases.
  */
 int	hlBBoxTest(const hlBBox *box, int tx, int ty, int tz);
+/**
+ * Increase the size of a box to contain another box
+ * @param box1 : the box that will be extended.
+ * @param box2 : the box that will be inside box1
+ */
+void	hlBBoxExtend(hlBBox *box1, const hlBBox *box2);
 
 struct hl_vec{
-	int opcount;	/*amount of operations in the vector */
+	int opcount;		/*amount of operations in the vector */
 	int max_opcount;	/*maximum count of operations that can be put in the vector */
-	int max_veccount;
-	int *p_num_index;
-	float **p_num_vec;
-	/* if p_num_index[i] < 0 the parameter p_num[i] is constant 
-	 * for all operations in the vector. 
-	 * if p_num_index[i] >= 0 the paramater p_num[i] is vectorized.
-	 * the parameter i for the operation j can be found at
-	 * p_num_vec[i][j]
-	 *
-	 * size of p_num_vec is [max_veccount * max_opcount]
-	 */
-
-	hlFrame **cache;/*cache for the vec operations. Size is max_opcount */
+	int p_numc;		/*same as in op*/
+	float **p_num_vec;	/*The parameter vector, size is [max_opcount][p_numc] */ 
+	hlFrame **cache;	/*cache for the vec operations. Size is max_opcount */
 };
 /** Adds an operation on top of a vector of operation.
  * @param vecop : an operation to vectorise, must not be null.
@@ -94,7 +90,11 @@ hlVec *hlDupVec(const hlVec *vec);
  * and must not have been freed before. Freeing the operation vector will
  * also free the caches it contains.
  */
-void	hlFreeVec(hlVec *vec);
+void  hlFreeVec(hlVec *vec);
+hlTile *hlVecCacheGet(hlVec* v, int opindex, int tx, int ty, unsigned int tz);
+hlTile *hlVecCacheRemove(hlVec* v,int opindex, int x, int y, unsigned int z);
+void hlVecCacheSet(hlVec* v,int opindex, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty, unsigned int tz);
+
 struct hl_op{
 	struct hl_op* down;
 	int locked;

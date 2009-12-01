@@ -14,7 +14,8 @@ HL_OBJECTS = 	hlColorSpace.o \
 		hlOp.o \
 		hlBlendOp.o \
 		hlDrawOp.o \
-		hlInit.o 
+		hlInit.o \
+		hlStat.o
 
 
 all: Makefile ../Makefile.inc test libhl
@@ -71,6 +72,10 @@ hlDrawOp.o: hlDrawOp.c hlDrawOp.h ${CORE_H}
 
 hlInit.o: hlInit.c ${CORE_H}
 	${CC} ${CCFLAG} -c hlInit.c
+
+hlStat.o: hlStat.c ${CORE_H}
+	${CC} ${CCFLAG} -c hlStat.c
+
 
 #	CLEANING TARGET
 

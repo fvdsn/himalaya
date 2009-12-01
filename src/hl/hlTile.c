@@ -5,20 +5,23 @@
 #include <assert.h>
 
 long int random(void);	/*TODO wtf do we need this ? */
+extern int num_tile;
 
 hlTile *hlNewTile(hlCS cs){
 	hlTile *tile;
 	tile = (hlTile*)malloc(hlTileSize(cs));
 	assert(tile);
+	num_tile++;
 	return tile;
 }
 void hlFreeTile(hlTile *tile){
+	num_tile--;
 	free(tile);
 }
 int hlTileSize(hlCS cs){
 	int size = 0;
 	switch(hlCSGetBpc(cs)){ 
-		case HL_8B:{
+		case HL_8B:
 			switch (hlCSGetChan(cs)){
 				case 1: {size=HL_TILEWIDTH_8B1;break;}
 				case 2: {size=HL_TILEWIDTH_8B2;break;}
@@ -26,8 +29,8 @@ int hlTileSize(hlCS cs){
 				case 4: {size=HL_TILEWIDTH_8B4;break;}
 				case 5: {size=HL_TILEWIDTH_8B5;break;}
 			}
-		}
-		case HL_32B:{
+		break;
+		case HL_32B:
 			switch (hlCSGetChan(cs)){
 				case 1: {size=HL_TILEWIDTH_32B1;break;}
 				case 2: {size=HL_TILEWIDTH_32B2;break;}
@@ -35,7 +38,8 @@ int hlTileSize(hlCS cs){
 				case 4: {size=HL_TILEWIDTH_32B4;break;}
 				case 5: {size=HL_TILEWIDTH_32B5;break;}
 			}	
-		}
+		break;
+		
 	}
 	if(!size){
 		hlPrintCS(cs);
