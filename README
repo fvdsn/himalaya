@@ -1,23 +1,30 @@
-Himalaya est une librarie de dessin 2D
-adaptée aux images de grande taille. Supporte
-8 et 32bit par canal, 
+HIMALAYA ALPHA 1
+================
+
+Himalaya is a 2D image real time editing library and program,
+adapted to gigapixel images, with 8 and 32bit per channel
+precision.
 
 Compilation :
 ¨¨¨¨¨¨¨¨¨¨¨¨¨
-dépendances : 
-	Scons
+Dependencies :
+	a POSIX system
+	make
 	gcc
-	Clutter >0.8
 	libDevil
-ensuite, taper scons dans le répertoire src.
-l'éxécutable s'appelle a.bin
+	SDL 1.3 (gui only)
 
-Organisation du code :
-¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨
-La doc se trouve dans les .h
-Les structures intéressantes sont
-hlFrame.c/h
-hlImg.c/h
+to compile the program, type make in the
+src directory. The executable is named main.bin
 
-Un exemple d'utilisation de l'api se
-trouve en bas de hlImg.c en commentaires.  
+You can compile libraries and test suites by 
+typing make in the src/hl and src/gui directories.
+
+Code Organization :
+¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨
+gui library is in src/gui
+himalaya library is in src/hl
+editing program is in src/
+
+documentation is in the headers
+
