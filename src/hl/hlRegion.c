@@ -9,7 +9,7 @@ static int hl_txy_from_sxy(int sx){
 	else
 		return (sx+1)/HL_TILEWIDTH - 1;
 }
-hlRegion hlNewRegion(int px, int py, int sx, int sy, unsigned int z){
+hlRegion hlNewRegion(int px, int py, int sx, int sy, int z){
 	hlRegion r;
 	if (sx <= 0){sx = 1;}
 	if (sy <= 0){sy = 1;}

@@ -33,7 +33,9 @@ enum hl_op_type{
 	HL_BLENDING,
 	HL_DRAW,
 	HL_TRANSFORM,
-	HL_FILTER
+	HL_FILTER,
+	HL_BBOX,
+	HL_GROUP
 };
 
 struct hl_bbox{
@@ -91,12 +93,13 @@ hlVec *hlDupVec(const hlVec *vec);
  * also free the caches it contains.
  */
 void  hlFreeVec(hlVec *vec);
-hlTile *hlVecCacheGet(hlVec* v, int opindex, int tx, int ty, unsigned int tz);
-hlTile *hlVecCacheRemove(hlVec* v,int opindex, int x, int y, unsigned int z);
-void hlVecCacheSet(hlVec* v,int opindex, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty, unsigned int tz);
+hlTile *hlVecCacheGet(hlVec* v, int opindex, int tx, int ty, int tz);
+hlTile *hlVecCacheRemove(hlVec* v,int opindex, int x, int y, int z);
+void hlVecCacheSet(hlVec* v,int opindex, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty, int tz);
 
 struct hl_op{
 	struct hl_op* down;
+	struct hl_op* skip;	/*if tile not in bbox, go to skip instead of down */
 	int locked;
 	int caching;	/*always cache if true */
 	int refcount; 	/*count of saved state depending on this op*/
@@ -126,6 +129,7 @@ struct hl_op{
 	
 	hlBBox bbox; 	/* bounding box of the operations effects */
 	hlVec *vector; /* a vector compressing similar operations into one */
+
 };
 
 /**
@@ -301,17 +305,17 @@ void	hlOpCacheEnable(hlOp*op, int enabled);
 /*removes every tile in the cache and frees it*/
 void 	hlOpCacheFree(hlOp*op);
 /*removes the tiles from the cache and returns it*/
-hlTile *hlOpCacheRemove(hlOp* op, int x, int y, unsigned int z);
+hlTile *hlOpCacheRemove(hlOp* op, int x, int y, int z);
 
 /*places a copy of the tile in the cache. frees the original one,
  * if it exists. tile should not be NULL. WARNING : any modification of
  * the tile after it has been set will modify the tile in the cache 
  * as well, use hlTileDup() */
-void 	hlOpCacheSet(hlOp* op, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty,unsigned int tz);
+void 	hlOpCacheSet(hlOp* op, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty,int tz);
 
 /*returns the tile in the cache. returns NULL if there is no tile in
  * the cache. WARNING any modification of the returned tile will modify
  * the cache as well. use hlTileDup() if you plan to modify the tile*/
-hlTile *hlOpCacheGet(hlOp* op, int tx, int ty, unsigned int tz);
+hlTile *hlOpCacheGet(hlOp* op, int tx, int ty, int tz);
 
 #endif

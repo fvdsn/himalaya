@@ -28,7 +28,7 @@ struct hl_frame{
 	hlCS cs;
 	hlColor color;		/*background color*/
 	hlTile* bg;		/*tile filled with background color*/
-	unsigned int depth; /* root node is depth 0 */
+	int depth; /* root node is depth 0 */
 	struct hl_node *tlroot; /*(tx,ty) < 0*/
 	struct hl_node *trroot; /*(tx>=0, ty <0)*/
 	struct hl_node *brroot; /*(tx,ty) >=0*/
@@ -53,15 +53,15 @@ void 	hlFreeFrame(hlFrame *f);
 void 	hlFramePurge(hlFrame *f);
 void 	hlPrintFrame(hlFrame *f);
 /*returns the amount of tiles at the z level in the X/Y axis*/
-uint32_t hlFrameTileX( 	hlFrame *f, unsigned int z);
-uint32_t hlFrameTileY( 	hlFrame *f, unsigned int z);
+int hlFrameTileX( 	hlFrame *f, int z);
+int hlFrameTileY( 	hlFrame *f, int z);
 
 /*returns the size in pixels in the X/Y axis*/
-uint32_t hlFrameSizeX(hlFrame *f, unsigned int z);
-uint32_t hlFrameSizeY(hlFrame *f, unsigned int z);
+int hlFrameSizeX(hlFrame *f, int z);
+int hlFrameSizeY(hlFrame *f, int z);
 
 /*returns the count of mipmap levels */
-uint32_t hlFrameDepth(hlFrame *f);
+int hlFrameDepth(hlFrame *f);
 
 /*returns the frame background color*/
 hlColor  hlFrameColor(hlFrame *f);
@@ -75,14 +75,14 @@ void 	hlFrameTileSet(	hlFrame *f,
 			hlTile *t, 
 			int x, 
 			int y,
-			unsigned int z	);
+			int z	);
 
 /* returns the tile at coordinates x,y,z for UKNOWWHATUDO access
  * returns NULL if no tile */
 hlTile 	*hlFrameTileGet( 	hlFrame *f,
 				int x,
 				int y,
-				unsigned int z 	);
+				int z 	);
 
 /* returns the tile at coordinates x,y,z for read only access,
  * returns a tile filled with the background color if empty, 
@@ -90,14 +90,14 @@ hlTile 	*hlFrameTileGet( 	hlFrame *f,
 hlTile  *hlFrameTileRead(	hlFrame *f, 
 				int x, 
 				int y,
-				unsigned int z	);
+				int z	);
 
 /* returns the tile at coordinates x,y,z for write access :
  * if the tile doesn't exists it inserts a new one and returns it */
 hlTile 	*hlFrameTileWrite( 	hlFrame *f,
 				int x,
 				int y,
-				unsigned int z 	);
+				int z 	);
 
 /* returns a throw away copy of the tile at x,y,z for DWTFYW access,
  * don't forget to free it after use.
@@ -106,25 +106,25 @@ hlTile 	*hlFrameTileWrite( 	hlFrame *f,
 hlTile 	*hlFrameTileCopy( 	hlFrame *f,
 				int x,
 				int y,
-				unsigned int z 	);
+				int z 	);
 
 /* removes the corresponding tile from the frame and frees it.
  */
 void 	hlFrameTileFree( 	hlFrame *f,
 				int x,
 				int y,
-				unsigned int z	);
+				int z	);
 /* removes the corresponding tile from the frame and returns
  * it. will return NULL if tile didn't exist
  */
 hlTile *hlFrameTileRemove(	hlFrame *f, 
 				int x, 
 				int y, 
-				unsigned int z);
+				int z);
 /* creates a raw with the entire frame contents at zoom level z */
-hlRaw* 	hlRawFromFrame(hlFrame *f, unsigned int z);
+hlRaw* 	hlRawFromFrame(hlFrame *f, int z);
 hlRaw*  hlRawFromRegion(hlFrame *f, hlRegion r);
-void    hlRegionToRaw(hlFrame *f, hlRaw *raw, int px, int py, unsigned int z);
+void    hlRegionToRaw(hlFrame *f, hlRaw *raw, int px, int py, int z);
 /* creates a frame containing the raw as level 0. doesnt populates
  * tiles at higher zoom level */
 hlFrame* hlFrameFromRaw(hlRaw *f);

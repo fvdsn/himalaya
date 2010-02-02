@@ -10,8 +10,8 @@ extern int num_frame_node;
 
 
 /*	hlNewFrame(...)		*/
-static unsigned int hl_depth_from_size(int ptx, int pty, int tx, int ty){
-	unsigned int depth = 0;
+static int hl_depth_from_size(int ptx, int pty, int tx, int ty){
+	int depth = 0;
 	tx = tx - ptx;	/*how many tiles in a line minus one*/
 	ty = ty - pty;
 	if (ty > tx){ tx = ty;}
@@ -22,13 +22,13 @@ static unsigned int hl_depth_from_size(int ptx, int pty, int tx, int ty){
 	}
 	return depth;
 }
-static int hl_zoom_size(int size, unsigned int z){
+static int hl_zoom_size(int size, int z){
 	while(z--){
 		size /=2;
 	}
 	return size;
 }
-static hlNode* hl_new_node(uint32_t x, uint32_t y){
+static hlNode* hl_new_node(unsigned int x, unsigned int y){
 	hlNode* n = (hlNode*)malloc(sizeof(hlNode));
 	memset(n,0,sizeof(hlNode));
 	n->x = x;
@@ -94,21 +94,21 @@ void hlFreeFrame(hlFrame *f){
 /* 	hlFrameSizeXY(..) / hlFrameTileXY(..) / etc ... */
 /* frame have infinite size, this provides a quick way to get interesting
  * data from the frames render region */
-unsigned int hlFrameSizeX(hlFrame *f, unsigned int z){
+int hlFrameSizeX(hlFrame *f, int z){
 	return hl_zoom_size(f->region.sx,z);
 }
-unsigned int hlFrameSizeY(hlFrame *f, unsigned int z){
+int hlFrameSizeY(hlFrame *f, int z){
 	return hl_zoom_size(f->region.sy,z);
 }
-unsigned int hlFrameTileX(hlFrame *f, unsigned int z){
+int hlFrameTileX(hlFrame *f, int z){
 	hlRegion r = hlNewRegion(0,0,hlFrameSizeX(f,z),hlFrameSizeY(f,z),z);
 	return r.tx;
 }
-unsigned int hlFrameTileY(hlFrame *f, unsigned int z){
+int hlFrameTileY(hlFrame *f, int z){
 	hlRegion r = hlNewRegion(0,0,hlFrameSizeX(f,z),hlFrameSizeY(f,z),z);
 	return r.ty;
 }
-unsigned int hlFrameDepth(hlFrame *f){
+int hlFrameDepth(hlFrame *f){
 	return f->depth;
 }
 hlCS hlFrameCS(hlFrame *f){
@@ -152,7 +152,7 @@ static void hl_frame_grow(hlFrame *f, int x, int y, int z){
 	/*grows the frame depth so that it can store a tile
 	 * at given coordinates 
 	 * TODO : don't grow the octree if it's empty */
-	unsigned int newdepth = depth_from_tile(x,y,z);
+	int newdepth = depth_from_tile(x,y,z);
 	if(newdepth <= f->depth){
 		return;
 	}else{
@@ -206,7 +206,7 @@ static int hl_tile_path(unsigned int *pathx, unsigned int *pathy, int tx, int ty
 		return 0;
 	}
 }
-hlTile* hlFrameTileGet(hlFrame *f, int x, int y,unsigned int z){
+hlTile* hlFrameTileGet(hlFrame *f, int x, int y,int z){
 	hlNode *n;
 	unsigned int pathx[HL_MAX_TILE_LEVEL];
 	unsigned int pathy[HL_MAX_TILE_LEVEL];
@@ -234,19 +234,19 @@ hlTile* hlFrameTileGet(hlFrame *f, int x, int y,unsigned int z){
 	}
 	return n->tile;	/*TODO is the depth awkay ?*/
 }
-hlTile* hlFrameTileRead(hlFrame* f, int x, int y, unsigned int z){
+hlTile* hlFrameTileRead(hlFrame* f, int x, int y, int z){
 	hlTile* t = hlFrameTileGet(f,x,y,z);
 	if(t)
 		return t;
 	else
 		return f->bg;
 }
-hlTile* hlFrameTileCopy(hlFrame* f, int x, int y, unsigned int z){
+hlTile* hlFrameTileCopy(hlFrame* f, int x, int y, int z){
 	return hlTileDup(hlFrameTileRead(f,x,y,z),hlFrameCS(f));
 }	
 
 /* 	hlFrameTileSet(...) 	*/
-static hlNode* hl_tile_match_set(hlNode* n,uint32_t u,uint32_t v,uint32_t x,uint32_t y ){
+static hlNode* hl_tile_match_set(hlNode* n,unsigned int u,unsigned int v,unsigned int x,unsigned int y ){
 	/* returns the child node of n matching the coordinates x,y.
 	 * if the node doesn't exists, it is created.
 	 * u,v are the coordinates of the node n
@@ -255,8 +255,8 @@ static hlNode* hl_tile_match_set(hlNode* n,uint32_t u,uint32_t v,uint32_t x,uint
 	 * like it does three time as much as needed, but it should
 	 * work fine :p
 	 */
-	uint32_t pu = u;
-	uint32_t pv = v;
+	unsigned int pu = u;
+	unsigned int pv = v;
 	assert(n->x == pu && n->y == pv);
 	u = u*2 +1 ;
 	v = v*2 +1 ;
@@ -306,13 +306,13 @@ static hlNode *hl_frame_get_root(hlFrame *f, int x, int y){
 		else{	 return f->tlroot;}
 	}
 }
-void hlFrameTileSet(hlFrame *f, hlTile * tile,int x, int y, unsigned int z){
+void hlFrameTileSet(hlFrame *f, hlTile * tile,int x, int y, int z){
 	hlNode *n = hl_frame_get_root(f,x,y);
-	uint32_t pathx[HL_MAX_TILE_LEVEL];
-	uint32_t pathy[HL_MAX_TILE_LEVEL];
-	uint32_t level = f->depth - z;
-	uint32_t i = level;
-	uint32_t j = 0;
+	unsigned int pathx[HL_MAX_TILE_LEVEL];
+	unsigned int pathy[HL_MAX_TILE_LEVEL];
+	int level = f->depth - z;
+	int i = level;
+	int j = 0;
 	if(hl_tile_path(pathx,pathy,x,y,z,f->depth)){
 		hl_frame_grow(f,x,y,z);		return;
 	}
@@ -347,7 +347,7 @@ static void hl_remove_child_node(hlNode *node, hlNode *parent){
 		assert(0 && "frame insanity");
 	}
 }
-hlTile * hlFrameTileRemove(hlFrame *f, int x, int y, unsigned int z){
+hlTile * hlFrameTileRemove(hlFrame *f, int x, int y, int z){
 	hlNode *n = hl_frame_get_root(f,x,y);
 	hlTile * t = NULL;
 	unsigned int pathx[HL_MAX_TILE_LEVEL];
@@ -388,7 +388,7 @@ hlTile * hlFrameTileRemove(hlFrame *f, int x, int y, unsigned int z){
 	}while(j-- > 1);
 	return t;
 }
-void hlFrameTileFree(hlFrame *f, int x, int y, unsigned int z){
+void hlFrameTileFree(hlFrame *f, int x, int y, int z){
 	hlTile *t = hlFrameTileRemove(f,x,y,z);
 	if (t){
 		hlFreeTile(t);
@@ -461,7 +461,7 @@ static void hlTileToRaw(hlTile *t, hlRaw *raw, int px, int py){
 	}
 }
 
-void hlRegionToRaw(hlFrame *f,hlRaw *raw,int px, int py,unsigned int z){
+void hlRegionToRaw(hlFrame *f,hlRaw *raw,int px, int py,int z){
 	hlRegion r = hlNewRegion(px,py,hlRawSizeX(raw),hlRawSizeY(raw),z);
 	int x,y;	/*tile index*/
 	int rx,ry;	/*top left pixel in raw where current tile will be copied */
@@ -553,7 +553,7 @@ hlRaw *hlRawFromRegion(hlFrame *f, hlRegion r){
 	hlRegionToRaw(f,raw,r.px,r.py,r.z);
 	return raw;
 }
-hlRaw * hlRawFromFrame(hlFrame *f,unsigned int z){
+hlRaw * hlRawFromFrame(hlFrame *f,int z){
 	hlRegion r = hlNewRegion(0,0,hlFrameSizeX(f,z),hlFrameSizeY(f,z),z);
 	return hlRawFromRegion(f,r);
 }
@@ -582,10 +582,10 @@ static hlTile *hlTileFromRaw(hlRaw *r,hlColor *bg,int tx, int ty){
 hlFrame *hlFrameFromRaw(hlRaw *r){
 	hlColor c  = hlNewColor(r->cs,0,0,0,0,0);
 	hlFrame *f = hlNewFrame(c,r->sx,r->sy);
-	const uint32_t tx = hlFrameTileX(f,0);
-	const uint32_t ty = hlFrameTileY(f,0);
-	uint32_t x = tx;
-	uint32_t y = ty;
+	const int tx = hlFrameTileX(f,0);
+	const int ty = hlFrameTileY(f,0);
+	int x = tx;
+	int y = ty;
 	while(y--){
 		x = tx;
 		while(x--){
@@ -596,17 +596,17 @@ hlFrame *hlFrameFromRaw(hlRaw *r){
 }
 
 /* 	hlFrameMakeMipmap(...) 	*/
-static void hl_tile_cpy_pixel(hlCS cs, hlTile* dst,uint32_t dx, uint32_t dy, const hlTile *src, uint32_t sx, uint32_t sy){
-	const uint32_t bpp = hlCSGetBpp(cs);
+static void hl_tile_cpy_pixel(hlCS cs, hlTile* dst,unsigned int dx, unsigned int dy, const hlTile *src, unsigned int sx, unsigned int sy){
+	const unsigned int bpp = hlCSGetBpp(cs);
 	memcpy(	(char*)(HL_DATA_8B(dst)) + ((dy * HL_TILEWIDTH) + dx)*bpp,
 		(char*)(HL_DATA_8B(src)) + ((sy * HL_TILEWIDTH) + sx)*bpp,
 		bpp);
 }
 static void hl_tile_mipmap(hlCS cs, hlTile* dst, const hlTile *src, int top, int left){
-	const uint32_t px = left ? 0 : HL_TILEWIDTH / 2 ;
-	const uint32_t py = top  ? 0 : HL_TILEWIDTH / 2 ;
-	uint32_t x = HL_TILEWIDTH / 2;
-	uint32_t y = HL_TILEWIDTH / 2;
+	const unsigned int px = left ? 0 : HL_TILEWIDTH / 2 ;
+	const unsigned int py = top  ? 0 : HL_TILEWIDTH / 2 ;
+	unsigned int x = HL_TILEWIDTH / 2;
+	unsigned int y = HL_TILEWIDTH / 2;
 	while(x--){
 		y = HL_TILEWIDTH / 2;
 		while (y--){

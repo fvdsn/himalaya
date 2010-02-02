@@ -14,9 +14,9 @@ void hlAdjOpSkip(hlTile *t, hlOp *p){
 }
 
 /* 	hlAdjOpInvert(...) 		*/
-static void hl_invert_8b(hlTile *t, const uint32_t chan){
-	int32_t i = chan*HL_TILEWIDTH*HL_TILEWIDTH;
-	int32_t j = chan - 1;
+static void hl_invert_8b(hlTile *t, const unsigned int chan){
+	int i = chan*HL_TILEWIDTH*HL_TILEWIDTH;
+	int j = chan - 1;
 	uint8_t * data = HL_DATA_8B(t);
 	while((i-=chan)>= 0){
 		j = chan - 1;
@@ -25,9 +25,9 @@ static void hl_invert_8b(hlTile *t, const uint32_t chan){
 		}
 	}
 }
-static void hl_invert_32b(hlTile *t, const uint32_t chan){
-	int32_t i = chan* HL_TILEWIDTH*HL_TILEWIDTH;
-	int32_t j = chan - 1;
+static void hl_invert_32b(hlTile *t, const unsigned int chan){
+	int i = chan* HL_TILEWIDTH*HL_TILEWIDTH;
+	int j = chan - 1;
 	float * data = HL_DATA_32B(t);
 	while((i-=chan)>=0){
 		j = chan - 1;
@@ -37,7 +37,7 @@ static void hl_invert_32b(hlTile *t, const uint32_t chan){
 	}
 }
 void hlAdjOpInvert(hlTile *t, hlOp *p){
-	uint32_t chan = hlCSGetChan(hlOpGetCSIn(p));
+	unsigned int chan = hlCSGetChan(hlOpGetCSIn(p));
 	switch(hlCSGetBpc(hlOpGetCSIn(p))){
 		case HL_8B:{hl_invert_8b(t,chan);break;}
 		case HL_32B:{hl_invert_32b(t,chan);break;}
@@ -96,8 +96,8 @@ static uint8_t hl_pow_8b(uint8_t a, float b){
 	fa = pow(fa,b);
 	return (uint8_t)(fa*255.0);
 }
-static void hl_math_8b(hlTile *t, unsigned int id, const uint32_t chan, const float * f){
-	int32_t i = chan*HL_TILEWIDTH*HL_TILEWIDTH;
+static void hl_math_8b(hlTile *t, unsigned int id, const unsigned int chan, const float * f){
+	int i = chan*HL_TILEWIDTH*HL_TILEWIDTH;
 	uint8_t * data = HL_DATA_8B(t);
 	int  fact[5];
 	uint8_t fact8[5];
@@ -352,7 +352,7 @@ static void hl_math_32b(hlTile *t, unsigned int id, const uint32_t chan, const f
 }
 */
 void hlAdjOpMath(hlTile *t, hlOp *p){
-	uint32_t chan = hlCSGetChan(hlOpGetCSIn(p));
+	unsigned int chan = hlCSGetChan(hlOpGetCSIn(p));
 	float *num = hlOpGetAllValue(p);
 	int id = hlOpGetId(p);
 	/*	printf("hlAdjOpMath: chan:%d, id:%d\n",chan,id);*/
@@ -365,7 +365,7 @@ void hlAdjOpMath(hlTile *t, hlOp *p){
 
 /* CHANNEL MIXER */
 static void hl_chanmix_8b(hlTile *t,unsigned int chan, const float *n){
-	int32_t i = chan*HL_TILEWIDTH*HL_TILEWIDTH;
+	int i = chan*HL_TILEWIDTH*HL_TILEWIDTH;
 	uint8_t *d = HL_DATA_8B(t);
 	while((i-=chan)>=0){
 		switch (chan){
@@ -397,7 +397,7 @@ static void hl_chanmix_8b(hlTile *t,unsigned int chan, const float *n){
 	}
 }
 static void hl_chanmix_32b(hlTile *t,unsigned int chan, const float *n){
-	int32_t i = chan*HL_TILEWIDTH*HL_TILEWIDTH;
+	int i = chan*HL_TILEWIDTH*HL_TILEWIDTH;
 	float *d = HL_DATA_32B(t);
 	while((i-=chan)>=0){
 		switch (chan){
@@ -429,7 +429,7 @@ static void hl_chanmix_32b(hlTile *t,unsigned int chan, const float *n){
 	}
 }
 void hlAdjOpChanmix(hlTile *t, hlOp *p){
-	uint32_t chan = hlCSGetChan(hlOpGetCSIn(p));
+	unsigned int chan = hlCSGetChan(hlOpGetCSIn(p));
 	float *num = hlOpGetAllValue(p);
 	switch(hlCSGetBpc(hlOpGetCSIn(p))){
 		case HL_8B:{ hl_chanmix_8b(t,chan,num);break;}

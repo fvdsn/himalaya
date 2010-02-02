@@ -12,7 +12,6 @@
  *
  * Other solutions should be possible.
  */
-typedef unsigned int uint;
 typedef struct hl_tile{
 	char data[1];
 	char end[];

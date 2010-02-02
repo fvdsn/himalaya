@@ -16,7 +16,7 @@ void hlSquareBBoxFun(const hlOp *op, hlBBox *box){
 	box->bty = (int)(floorf(op->p_num[3]/HL_TILEWIDTH)) + 1;
 	//printf("BBox : Rect : [%d,%d | %d,%d]\n",box->tx,box->ty,box->btx,box->bty);
 }
-static void hl_draw_rect_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, int ty, unsigned int tz){
+static void hl_draw_rect_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, int ty, int tz){
 	uint8_t* data = HL_DATA_8B(a);
 	const uint8_t *color = hlColorGetData(c);
 	const int X = tx*HL_TILEWIDTH;
@@ -61,7 +61,7 @@ void hlCircleBBoxFun(const hlOp *op, hlBBox *box){
 	//printf("BBox : Circle : [%d,%d | %d,%d]\n",box->tx,box->ty,box->btx,box->bty);
 }
 
-static void hl_draw_circle_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, int ty, unsigned int tz){
+static void hl_draw_circle_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, int ty, int tz){
 	uint8_t* data = HL_DATA_8B(a);
 	const uint8_t* color = hlColorGetData(c);
 	int X = tx*HL_TILEWIDTH;
@@ -110,7 +110,7 @@ static void hl_draw_circle_8b(hlTile *a,hlColor *c, int chan,float *num, int tx,
 	}
 }
 
-static void hl_draw_8b(hlTile *a, int id, hlColor *c, int chan, float *num, int tx, int ty, unsigned int tz){
+static void hl_draw_8b(hlTile *a, int id, hlColor *c, int chan, float *num, int tx, int ty, int tz){
 	switch(id){
 		case HL_DRAW_RECT:
 		hl_draw_rect_8b(a,c,chan,num,tx,ty,tz);
@@ -121,7 +121,7 @@ static void hl_draw_8b(hlTile *a, int id, hlColor *c, int chan, float *num, int 
 	}
 }
 
-void hlDrawOp(hlTile *a, hlOp *p, int tx, int ty, unsigned int tz){
+void hlDrawOp(hlTile *a, hlOp *p, int tx, int ty, int tz){
 	int id = hlOpGetId(p);
 	hlColor *c = hlOpGetAllColor(p);
 	hlCS cs = hlColorGetCS(c);
@@ -137,7 +137,7 @@ void hlDrawOp(hlTile *a, hlOp *p, int tx, int ty, unsigned int tz){
 
 	}
 }
-void hlDrawVec(hlTile *a, hlOp *p, int opindex, int tx, int ty, unsigned int tz){
+void hlDrawVec(hlTile *a, hlOp *p, int opindex, int tx, int ty, int tz){
 	int id = hlOpGetId(p);
 	hlColor *c = hlOpGetAllColor(p);
 	hlCS cs = hlColorGetCS(c);

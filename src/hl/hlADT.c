@@ -4,10 +4,10 @@
 #include"hlADT.h"
 
 
-static unsigned int hash(unsigned int size, unsigned int key){
+static int hash(int size, int key){
 	return key % size;
 }
-hlHash *hlNewHash(unsigned int size){
+hlHash *hlNewHash(int size){
 	hlHash *h = (hlHash*)malloc(sizeof(hlHash));
 	assert(size);
 	h->table = (hlHNode**)malloc(size * sizeof(hlHNode*));
@@ -15,15 +15,15 @@ hlHash *hlNewHash(unsigned int size){
 	h->objcount = 0;
 	return h;
 }
-static hlHNode * hl_new_hnode(unsigned int key, void * data){
+static hlHNode * hl_new_hnode(int key, void * data){
 	hlHNode * hn = (hlHNode*)malloc(sizeof(hlHNode));
 	hn->key = key;
 	hn->data = data;
 	hn->next = NULL;
 	return hn;
 }
-void *hlHashGet(hlHash *h, unsigned int key){
-	unsigned int index = hash(h->size,key);
+void *hlHashGet(hlHash *h, int key){
+	int index = hash(h->size,key);
 	hlHNode *tmp = h->table[index];
 	while(tmp){
 		if(tmp->key == key ){
@@ -46,7 +46,7 @@ static int hl_add_node(hlHNode **dst, hlHNode *src){
 		return 0;
 	}
 }
-int hlHashAdd(hlHash *h, unsigned int key, void *data){
+int hlHashAdd(hlHash *h, int key, void *data){
 	assert(data);
 	if (hlHashGet(h,key)){
 		return 1;
@@ -58,8 +58,8 @@ int hlHashAdd(hlHash *h, unsigned int key, void *data){
 		return 0;
 	}
 }
-void *hlHashRem(hlHash *h, unsigned int key){
-	unsigned int index = hash(h->size,key);
+void *hlHashRem(hlHash *h, int key){
+	int index = hash(h->size,key);
 	hlHNode *node = h->table[index];
 	hlHNode **prev = &(h->table[index]);
 	hlHNode *next = NULL;
@@ -78,7 +78,7 @@ void *hlHashRem(hlHash *h, unsigned int key){
 	}
 	return NULL;
 }
-unsigned int hlHashCount(hlHash *h){
+int hlHashCount(hlHash *h){
 	return h->objcount;
 }
 /*

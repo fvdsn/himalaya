@@ -131,7 +131,7 @@ void	hlFreeVec(hlVec *v){
 	free(v);
 	num_vec--;
 }
-hlTile *hlVecCacheGet(hlVec* v, int opindex, int tx, int ty, unsigned int tz){
+hlTile *hlVecCacheGet(hlVec* v, int opindex, int tx, int ty, int tz){
 	if(opindex >= v->opcount || opindex < 0){
 		return NULL;
 	}else if(v->cache[opindex]){
@@ -140,7 +140,7 @@ hlTile *hlVecCacheGet(hlVec* v, int opindex, int tx, int ty, unsigned int tz){
 		return NULL;
 	}
 }
-hlTile *hlVecCacheRemove(hlVec* v,int opindex, int x, int y, unsigned int z){
+hlTile *hlVecCacheRemove(hlVec* v,int opindex, int x, int y, int z){
 	if(opindex >= v->opcount || opindex < 0){
 		printf("ERROR: opindex out of bounds in cache remove\n");
 		return NULL;
@@ -150,7 +150,7 @@ hlTile *hlVecCacheRemove(hlVec* v,int opindex, int x, int y, unsigned int z){
 		return NULL;
 	}
 }
-void hlVecCacheSet(hlVec* v,int opindex, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty, unsigned int tz){
+void hlVecCacheSet(hlVec* v,int opindex, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty, int tz){
 	if(opindex >= v->opcount || opindex < 0){
 		printf("ERROR: opindex out of bounds in cache set\n");
 		return;
@@ -315,21 +315,21 @@ void hlOpCacheFree(hlOp*op){
 	if(op->cache)
 		hlFreeFrame(op->cache);
 }
-hlTile *hlOpCacheRemove(hlOp* op, int x, int y, unsigned int z){
+hlTile *hlOpCacheRemove(hlOp* op, int x, int y, int z){
 	if(op->cache){
 		return hlFrameTileRemove(op->cache,x,y,z);
 	}else{
 		return NULL;
 	}
 }
-void hlOpCacheSet(hlOp* op, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty, unsigned int tz){
+void hlOpCacheSet(hlOp* op, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty, int tz){
 	if(!op->cache){
 		op->cache = hlNewFrame(	hlNewColor(cs,0,0,0,0,0),sx,sy);
 	}
 	hlFrameTileSet(op->cache,tile,tx,ty,tz);
 	return;
 }
-hlTile *hlOpCacheGet(hlOp* op, int tx, int ty, unsigned int tz){
+hlTile *hlOpCacheGet(hlOp* op, int tx, int ty, int tz){
 	if(op->cache){
 		return hlFrameTileGet(op->cache,tx,ty,tz);
 	}

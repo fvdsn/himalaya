@@ -10,7 +10,7 @@ typedef struct hl_region{
 	int ty;
 	int ptx;/*index of the top left tile in region */ 
 	int pty;
-	unsigned int z; /*zoom level of region : 0 = orignal, 1 =
+	int z; /*zoom level of region : 0 = orignal, 1 =
 			2x zoom, 2 = 4x zoom, etc.*/
 }hlRegion;
 
@@ -18,7 +18,7 @@ hlRegion hlNewRegion(	int px,
 			int py,
 			int sx,
 			int sy,
-			unsigned int z	);
+			int z	);
 void hlPrintRegion(hlRegion r);
 
 #endif

@@ -162,34 +162,34 @@ void 	 hlPrintImg(hlImg *img, hlState s);
  * @param z	: the zoom level [0,31]
  * @return	: the width in pixel of the render region.
  */
-uint32_t hlImgSizeX(hlImg *img, uint32_t z);
+int hlImgSizeX(hlImg *img, int z);
 /**
  * Returns the height in pixel of the current render region at zoom level z.
  * @param img 	: the image.
  * @param z	: the zoom level [0,31]
  * @return	: the height in pixel of the render region.
  */
-uint32_t hlImgSizeY(hlImg *img, uint32_t z);
+int hlImgSizeY(hlImg *img, int z);
 /**
  * Returns the width in tiles of the current render region at zoom level z.
  * @param img 	: the image.
  * @param z	: the zoom level [0,31]
  * @return	: the width in tiles of the render region.
  */
-uint32_t hlImgTileX(hlImg *img, uint32_t z);
+int hlImgTileX(hlImg *img, int z);
 /**
  * Returns the height in tiles of the current render region at zoom level z.
  * @param img 	: the image.
  * @param z	: the zoom level [0,31]
  * @return	: the height in tiles of the render region.
  */
-uint32_t hlImgTileY(hlImg *img, uint32_t z);
+int hlImgTileY(hlImg *img, int z);
 /**
  * Returns the number of zoom levels in the image.
  * @param img 	: the image.
  * @return	: the zoom level where all the data is in a tile. [0,31]
  */
-uint32_t hlImgDepth(hlImg *img);
+int hlImgDepth(hlImg *img);
 /**
  * Returns the colorspace of the last operation in the current state.
  * @param img 	: the image.
@@ -204,19 +204,19 @@ hlTile * hlImgTileRead(	hlImg *img,
 			hlState s,
 			int tx,
 			int ty,
-			unsigned int tz	);
+			int tz	);
 /* returns a modifiable tile from the rendered image */
 hlTile * hlImgTileCopy( hlImg *img,
 			hlState s,
 			int tx,
 			int ty,
-			unsigned int tz	);
+			int tz	);
 /* makes sure the selected tile is rendered and up to date */
 void hlImgRenderTile(	hlImg *img,
 			hlState s,
 			int tx,
 			int ty,
-			unsigned int tz	);
+			int tz	);
 /*renders all the tiles in the region */
 void hlImgRenderRegion(hlImg *img, hlRegion r, hlState s);
 /* returns a frame for reading purpose valid until next modification
@@ -224,8 +224,9 @@ void hlImgRenderRegion(hlImg *img, hlRegion r, hlState s);
 hlFrame *hlImgReadFrame(hlImg *img, hlState s);
 /* returns a raw rendering of the image in region and state */
 hlRaw 	*hlImgRenderNewRaw(hlImg *img, hlRegion r, hlState s);
-void hlImgRenderToRaw(hlImg *img, hlRaw*raw, hlState state, int px, int py, unsigned int z);
+void hlImgRenderToRaw(hlImg *img, hlRaw*raw, hlState state, int px, int py, int z);
 void hlImgRenderRegionToRaw(hlImg *img, hlRegion r, hlState s, hlRaw *raw); /*TODO*/
+
 
 /* renders the tile in the designed op and below. if an operation
  * has caching enabled, a copy of the result is put into the tile.
@@ -240,8 +241,16 @@ void hlImgRenderRegionToRaw(hlImg *img, hlRegion r, hlState s, hlRaw *raw); /*TO
  * then it calls itself recursively, it represents the core rendering
  * algorithm. 
  * */
-hlTile *hlOpRenderTile(hlOp* op, bool istop, int tx, int ty, unsigned int tz);
+//hlTile *hlOpRenderTile(hlOp* op, bool istop, int tx, int ty, int tz);
 
+/** Renders a tile.
+ * @param op : the operation that must be rendered.
+ * @param cache : if 1 : the rendered tile is put in cache and the rendered tile is not
+ *  returned. if 0 : a writable tile is returned. a copy of that tile may be put
+ *  in cache. 
+ * @param x,y,z : coordinates of the tile. z must be >= 0.
+ */
+hlTile *hlOpRenderTile(hlOp*op, int cache, int x, int y, int z);
 
 #endif
 
