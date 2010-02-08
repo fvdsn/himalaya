@@ -35,8 +35,6 @@ struct hl_arg{
 
 hlOpClass op_library[HL_OP_COUNT];
 extern int num_op;
-extern int num_vec;
-extern int mem_vec;
 
 /*	hlBBox_(...)	*/
 int	hlBBoxTest(const hlBBox *box, int tx, int ty, int tz){
@@ -55,110 +53,6 @@ void	hlBBoxExtend(hlBBox *box1, const hlBBox *box2){
 	if(box2->btx > box1->btx){ box1->btx = box2->btx;}
 	if(box2->bty > box1->bty){ box1->bty = box2->bty;}
 	//printf("BBox : [ %d %d | %d %d ]\n",box1->tx,box1->ty,box1->btx,box1->bty);
-}
-
-/*	hlVec_(...)	*/
-#define FAILURE 0
-#define SUCCESS 1
-#define DEFAULT_VEC_SIZE 50
-static hlVec *hl_vec_new(int numc, int size){
-	hlVec *v = (hlVec*)malloc(sizeof(hlVec));
-	v->opcount = 0;
-	v->max_opcount = size;
-	v->p_numc = numc;
-	v->p_num_vec = (float**)malloc(size*sizeof(float*));
-	memset(v->p_num_vec,0,size*sizeof(float*));
-	v->cache = (hlFrame**)malloc(size*sizeof(hlFrame*));
-	memset(v->cache,0,size*sizeof(hlFrame*));
-	num_vec++;
-	mem_vec += size*sizeof(float*) + size *sizeof(hlFrame*);
-	return v;
-}
-static void hl_vec_push(hlVec *v,float *num){
-	if(v->opcount >= v->max_opcount){
-		v->max_opcount += DEFAULT_VEC_SIZE;
-		v->p_num_vec = realloc(v->p_num_vec,v->max_opcount*sizeof(float*));
-		memset(v->p_num_vec + v->opcount, 0, DEFAULT_VEC_SIZE*sizeof(float*));
-		v->cache = realloc(v->cache,v->max_opcount*sizeof(hlFrame*));
-		memset(v->cache + v->opcount, 0, DEFAULT_VEC_SIZE*sizeof(hlFrame*));
-		mem_vec += DEFAULT_VEC_SIZE*(sizeof(float*)+sizeof(hlFrame*));
-	}
-	v->p_num_vec[v->opcount] = (float*)malloc(v->p_numc*sizeof(float));
-	memcpy(v->p_num_vec[v->opcount],num,v->p_numc*sizeof(float));
-	v->opcount++;
-	mem_vec += v->p_numc*sizeof(float);
-}
-int	hlVecPushOp(hlOp *vop, hlOp *op){
-	/* by checking the operation to be of the same type, we ensure
-	 * that they have the same amount of parameters
-	 */
-	if(vop->id != op->id){
-		printf("Vec fail : different kind of operations\n");
-		return FAILURE;
-	}
-	if(vop->refcount){
-		printf("Vec fail : operation is referenced by a state\n");
-		/*we cannot modify an operation refered by a state*/
-		return FAILURE;
-	}
-	if(vop->p_colorc){
-		if(memcmp(vop->p_color,op->p_color,vop->p_colorc*sizeof(hlColor))){
-			printf("Vec fail : operation don't share their colors\n");
-			return FAILURE;
-		}
-	}
-	if(vop->p_imgc){
-		printf("Vec fail : operation has image references\n");
-		return FAILURE;	/*TODO consider this case */
-	}
-	if(!vop->vector){
-		printf("Init new vector\n");
-		vop->vector = hl_vec_new(vop->p_numc,DEFAULT_VEC_SIZE);
-	}
-	hl_vec_push(vop->vector,op->p_num);
-	hlBBoxExtend(&(vop->bbox),&(op->bbox));
-	hlFreeOp(op);
-	return SUCCESS;
-}
-void	hlFreeVec(hlVec *v){
-	int i = v->opcount;
-	while(i--){
-		free(v->p_num_vec[i]);
-		hlFreeFrame(v->cache[i]);
-	}
-	free(v->p_num_vec);
-	free(v->cache);
-	free(v);
-	num_vec--;
-}
-hlTile *hlVecCacheGet(hlVec* v, int opindex, int tx, int ty, int tz){
-	if(opindex >= v->opcount || opindex < 0){
-		return NULL;
-	}else if(v->cache[opindex]){
-		return hlFrameTileGet(v->cache[opindex],tx,ty,tz);
-	}else{
-		return NULL;
-	}
-}
-hlTile *hlVecCacheRemove(hlVec* v,int opindex, int x, int y, int z){
-	if(opindex >= v->opcount || opindex < 0){
-		printf("ERROR: opindex out of bounds in cache remove\n");
-		return NULL;
-	}else if(v->cache[opindex]){
-		return hlFrameTileRemove(v->cache[opindex],x,y,z);
-	}else{
-		return NULL;
-	}
-}
-void hlVecCacheSet(hlVec* v,int opindex, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty, int tz){
-	if(opindex >= v->opcount || opindex < 0){
-		printf("ERROR: opindex out of bounds in cache set\n");
-		return;
-	}
-	if(!v->cache[opindex]){
-		v->cache[opindex] = hlNewFrame(	hlNewColor(cs,0,0,0,0,0),sx,sy);
-	}
-	hlFrameTileSet(v->cache[opindex],tile,tx,ty,tz);
 }
 
 /* 	hlOp_(...)	*/
@@ -201,7 +95,6 @@ hlOp* hlNewOp(int id){
 	op->bbox.ty = 0;
 	op->bbox.btx = 0;
 	op->bbox.bty = 0;
-	op->vector = NULL;
 	
 	num_op++;
 	return op;
@@ -249,7 +142,6 @@ void hlFreeOp(hlOp* op){
 			free(op->p_state);
 		}
 		if(op->cache){hlFreeFrame(op->cache);}
-		if(op->vector){hlFreeVec(op->vector);}
 		num_op--;
 		free(op);
 	}

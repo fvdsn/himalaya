@@ -3,8 +3,6 @@
 int num_img;
 int num_op;
 int mem_op;
-int num_vec;
-int mem_vec;
 int num_frame;
 int mem_frame;
 int num_tile;
@@ -29,6 +27,4 @@ void hlStatPrint(void){
 	printf("num_img:%d\n",num_img);
 	printf("mem_img:%fMB\n",num_img*sizeof(hlImg)*MB);
 
-	printf("num_vec:%d\n",num_vec);
-	printf("mem_vec:%fMB\n",(num_vec*sizeof(hlVec)+mem_vec)*MB);
 }

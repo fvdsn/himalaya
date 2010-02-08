@@ -137,24 +137,4 @@ void hlDrawOp(hlTile *a, hlOp *p, int tx, int ty, int tz){
 
 	}
 }
-void hlDrawVec(hlTile *a, hlOp *p, int opindex, int tx, int ty, int tz){
-	int id = hlOpGetId(p);
-	hlColor *c = hlOpGetAllColor(p);
-	hlCS cs = hlColorGetCS(c);
-	int chan = hlCSGetChan(cs);
-	float *num = p->vector->p_num_vec[opindex];
-	if(opindex <0 || opindex >= p->vector->opcount){
-		printf("WARNING: opindex out of bounds : index%d, opcount:%d\n",
-				opindex,p->vector->opcount);
-	}
-	switch(hlCSGetBpc(cs)){
-		case HL_8B:
-		hl_draw_8b(a,id,c,chan,num,tx,ty,tz);
-		break;
-		case HL_32B:
-		default: 
-		return;
-
-	}
-}
 

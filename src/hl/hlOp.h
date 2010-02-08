@@ -62,44 +62,8 @@ int	hlBBoxTest(const hlBBox *box, int tx, int ty, int tz);
  */
 void	hlBBoxExtend(hlBBox *box1, const hlBBox *box2);
 
-struct hl_vec{
-	int opcount;		/*amount of operations in the vector */
-	int max_opcount;	/*maximum count of operations that can be put in the vector */
-	int p_numc;		/*same as in op*/
-	float **p_num_vec;	/*The parameter vector, size is [max_opcount][p_numc] */ 
-	hlFrame **cache;	/*cache for the vec operations. Size is max_opcount */
-};
-/** Adds an operation on top of a vector of operation.
- * @param vecop : an operation to vectorise, must not be null.
- * @param op  : the pushed operation, must not be null.
- * @return 0 if the operation has been addedd successfully to the vector, in
- * which case the operation is freed and the bounding box of the vecop is
- * updated. 1 if the operation could not be
- * added to the vector, for example because of parameter mismatch. in which
- * case the operation is not freed and must be pushed on the image in the usual
- * way.
- */
-int hlVecPushOp(hlOp *vecop, hlOp*op);
-/** Duplicates an operation vector.
- * @param vec : the original operation vector
- * @return a new operation vector with the same data as vec, 
- * does not duplicate the caches; All the caches
- * are set to NULL;
- */
-hlVec *hlDupVec(const hlVec *vec);
-/** Frees an operation vector.
- * @param vec : the operation vector to be freed. It must not be null,
- * and must not have been freed before. Freeing the operation vector will
- * also free the caches it contains.
- */
-void  hlFreeVec(hlVec *vec);
-hlTile *hlVecCacheGet(hlVec* v, int opindex, int tx, int ty, int tz);
-hlTile *hlVecCacheRemove(hlVec* v,int opindex, int x, int y, int z);
-void hlVecCacheSet(hlVec* v,int opindex, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty, int tz);
-
 struct hl_op{
 	struct hl_op* down;
-	struct hl_op* skip;	/*if tile not in bbox, go to skip instead of down */
 	int caching;	/*always cache if true */
 	int refcount; 	/*count of saved state depending on this op*/
 	hlOpRef ref;	/*number unique to this operation, shared
@@ -108,6 +72,10 @@ struct hl_op{
 			 *a child one */
 	int id;		/*what the operation does*/
 	int type;	/*broad category of operation (blend,rot,...)*/
+
+	struct hl_op* skip;	/*if tile not in bbox, go to skip instead of down */
+	hlBBox bbox; 	/* bounding box of the operations effects */
+
 	void (*render)(hlTile *dst, hlOp *p);
 
 	hlFrame *cache;
@@ -126,9 +94,6 @@ struct hl_op{
 	hlImg **p_img;
 	hlState*p_state;
 	
-	hlBBox bbox; 	/* bounding box of the operations effects */
-	/*hlVec *vector; * a vector compressing similar operations into one */
-
 };
 
 /**

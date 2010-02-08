@@ -213,21 +213,12 @@ hlOpRef hlImgPopOp(hlImg *img){
 	}
 }
 hlOpRef hlImgPushOp(hlImg *img, hlOp* op){
-	if(img->top){
-		hlOpSetCSIn(op,hlOpGetCSIn(img->top));
-		hlOpSetBBox(op);
-		if(hlVecPushOp(img->top,op)){
-			return img->top->ref;
-		}
-	}else{
-		hlOpSetBBox(op);
-		hlOpSetCSIn(op,hlFrameCS(img->source));
-	}
+	hlOpSetBBox(op);
+	hlOpSetCSIn(op,hlFrameCS(img->source));
 	insert_op(NULL,op,img->top);
 	img->state  = HL_STATE_UNSAVED;
 	img->top    = op;
 	op->img = img;
-	hlStatPrint();
 	return op->ref;
 }
 /**
@@ -851,14 +842,8 @@ void hlImgRenderRegion(hlImg *img, hlRegion r, hlState state){
 
 hlFrame * hlImgReadFrame(hlImg *img, hlState state){
 	hlOp* top = hl_img_get_top_op(img,state);
-	hlVec *v  = NULL;
 	if(top){
-		if(top->vector){
-			v = top->vector;
-			return v->cache[v->opcount-1];
-		}else{
-			return top->cache;
-		}
+		return top->cache;
 	}
 	else{
 		return img->source;

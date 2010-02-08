@@ -4,7 +4,6 @@
 #include "hlOp.h"
 
 void hlDrawOp(hlTile *a, hlOp *p,int tx, int ty, int tz);
-void hlDrawVec(hlTile *a, hlOp *p,int opindex, int tx, int ty, int tz);
 /* based on the parameters and the location of the tile to be
  * rendered
  * decides if the blending operation has a) no effect,
