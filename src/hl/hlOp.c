@@ -263,12 +263,8 @@ void hlPrintOp(hlOp *op){
 	else{
 		printf("   caching: false\n");
 	}
-	if(op->locked){
-		printf("   locked:  true\n");
-	}else{
-		printf("   locked:  false\n");
-	}
 	printf("   down:%p\n",(void*)op->down);
+	printf("   skip:%p\n",(void*)op->skip);
 	printf("   img:%p\n",(void*)op->img);
 	printf("   refcount:%d\n",op->refcount);
 	printf("   ref:%d\n",op->ref);
@@ -296,15 +292,6 @@ void hlPrintOp(hlOp *op){
 	}
 	printf("</Op>\n");
 	return;
-}
-void hlOpLock(hlOp *op){
-	op->locked = 1;
-}
-void hlOpUnlock(hlOp *op){
-	op->locked = 0;
-}
-int hlOpLocked(hlOp *op){
-	return op->locked;
 }
 
 /* 	hlOpCache___(...) 		*/

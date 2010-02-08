@@ -193,7 +193,6 @@ static void insert_op(hlOp *up, hlOp* newop, hlOp *down){
 		}
 		up->down = newop;
 	}
-	hlOpLock(newop);
 	/*TODO check for forked states */
 }
 hlOpRef hlImgPopOp(hlImg *img){
@@ -284,7 +283,6 @@ hlOp * hlImgModOpBegin(hlImg *img,hlOpRef ref){
 		return NULL;
 	}else{
 		op = hlImgForkOp(img,ref);
-		hlOpUnlock(op);
 		return op;
 	}
 }
@@ -294,7 +292,6 @@ void hlImgModOpEnd(hlImg *img, hlOpRef ref){
 		printf("ERROR: hlImgModOpEnd(...) operation not found.\n");
 	}else{
 		hlOpSetBBox(op);
-		hlOpLock(op);
 	}
 }
 

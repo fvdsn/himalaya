@@ -100,7 +100,6 @@ void hlVecCacheSet(hlVec* v,int opindex, hlTile*tile, hlCS cs, int sx, int sy, i
 struct hl_op{
 	struct hl_op* down;
 	struct hl_op* skip;	/*if tile not in bbox, go to skip instead of down */
-	int locked;
 	int caching;	/*always cache if true */
 	int refcount; 	/*count of saved state depending on this op*/
 	hlOpRef ref;	/*number unique to this operation, shared
@@ -128,7 +127,7 @@ struct hl_op{
 	hlState*p_state;
 	
 	hlBBox bbox; 	/* bounding box of the operations effects */
-	hlVec *vector; /* a vector compressing similar operations into one */
+	/*hlVec *vector; * a vector compressing similar operations into one */
 
 };
 
@@ -145,9 +144,6 @@ hlOp* 	hlNewOp(int id);
 hlOp* 	hlDupOp(hlOp *p);
 void 	hlFreeOp(hlOp* op);	/*TODO referenced states ... */
 void 	hlPrintOp(hlOp *op);
-void	hlOpLock(hlOp  *op);	/*TODO*/
-void	hlOpUnlock(hlOp *op);
-int	hlOpLocked(hlOp *op);
 
 /*------------- OPERATION ARGUMENTS ---------- */
 
