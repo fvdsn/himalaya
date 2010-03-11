@@ -1,5 +1,62 @@
+#include <assert.h>
+#include <stdio.h>
 #include "hlImg.h"
-int main(int argc, char **argv){
+
+static int hl_test_color_space(void){
+	hlCS cs1 = hlNewCS(HL_8B,HL_RGB);
+	hlCS cs2 = hlCSCopy(cs1);
+	return 0;
+}
+static int hl_regr_black_tiles(void){
+	hlCS cs = hlNewCS(HL_8B,HL_RGB);
+	hlColor green 	= hlNewColor(cs,0,1,0,0,1);
+	hlColor red 	= hlNewColor(cs,1,0,0,0,1);
+	hlColor white 	= hlNewColor(cs,1,1,1,0,1);
+	hlImg *img = hlNewImg(green,800,600);
+	return 0;
+}
+static int hl_test_adt_list(void){
+	fprintf(stdout,"TESTING: ADT LIST\n");
+	int a,b,c,d,e;
+	hlList *l = hlNewList();
+	assert(l->size == 0);
+	assert(hlListPop(l) == NULL);
+	assert(hlListGet(l,0) == NULL);
+	assert(hlListRemData(l, NULL) == 0);
+	hlListPush(l,&a);
+	assert(l->size == 1);
+	assert(hlListGet(l,0) == &a);
+	assert(hlListPop(l) == &a);
+	assert(l->size == 0);
+	hlListPush(l,&a);
+	hlListPush(l,&b);
+	assert(l->size == 2);
+	assert(hlListGet(l,0) == &b);
+	assert(hlListGet(l,1) == &a);
+	assert(hlListPop(l) == &b);
+	assert(l->size == 1);
+	assert(hlListPop(l) == &a);
+	assert(l->size == 0);
+	hlListAppend(l,&a);
+	hlListAppend(l,&b);
+	hlListAppend(l,&c);
+	hlListAppend(l,&d);
+	hlListAppend(l,&e);
+	hlListAppend(l,&c);
+	assert(l->size == 6);
+	assert(hlListGet(l,4) == &e);
+	assert(hlListRemData(l,&c));
+	assert(l->size == 5);
+	assert(hlListRemData(l,&c));
+	assert(l->size == 4);
+	assert(hlListRem(l,2) == &d);
+	assert(hlListRem(l,2) == &e);
+	assert(hlListRem(l,0) == &a);
+	assert(hlListRem(l,0) == &b);
+	assert(l->size == 0);
+	return 0;
+}
+static int hl_test_img(void){
  	hlCS cs	    = hlNewCS(HL_8B,HL_RGB);	
 	hlRaw *in   = hlRawFromPng("images/girl.png");
 	hlRaw *out  = hlNewRaw(cs,600,600);
@@ -41,11 +98,16 @@ int main(int argc, char **argv){
 
 	hlImgStateLoad(img,s1);
 
-	hlImgRenderToRaw(img, out,s1, 0, 0, 0);
+	hlImgRender(img,s1,out, 0, 0, 0);
 	hlRawToPng( out, "out1.png");
 
-	hlImgRenderToRaw(img, out,s2, 0, 0, 0);
+	hlImgRender(img,s2,out, 0, 0, 0);
 	hlRawToPng( out, "out2.png");
 
+	hlGraphImg(fopen("graph1.grph","w"),img,HL_GRAPH_SIMPLE);
+	return 0;
+}
+int main(int argc, char **argv){
+	hl_test_adt_list();
 	return 0;
 }

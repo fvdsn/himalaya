@@ -37,7 +37,7 @@ enum hl_tilesize_32b {
 #define HL_DATA_8B(tile) ((uint8_t*)(tile->data))
 #define HL_DATA_32B(tile) ((float*)(tile->data))
 #define HL_XY(x,y,chan) ((HL_TILEWIDTH*(y)+(x))*(chan))
-#define HL_XYC(x,y,chan) (HL_XY(x,y,chan) + (chan))
+#define HL_XYC(x,y,chan) (HL_XY((x),(y),(chan)) + (chan))
 #define HL_INDEX(i,chan) ((i)*(chan))
 
 hlTile *hlNewTile(hlCS cs);
@@ -46,7 +46,10 @@ int  	hlTileSize(hlCS cs);
 void 	hlTileZeroes(hlTile *tile, hlCS cs);
 void 	hlTileRandom(hlTile *tile, hlCS cs);
 void 	hlTileFill(hlTile *tile, hlColor *color);
+void	hlTileMult(hlTile *tile,hlColor *color);
 void 	hlTileCopy(hlTile *dst, const hlTile *src, hlCS cs);
+void	hlTileInterp(hlTile *dst, hlCS cs,const hlTile *tl, const hlTile *tr, 
+			const hlTile *br, const hlTile *bl);
 hlTile *hlTileDup(const hlTile *src, hlCS cs);
 float 	hlTileGetXYC(	hlTile *tile,
 			hlCS cs,

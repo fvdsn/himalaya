@@ -16,6 +16,8 @@ extern float hlsy;
 extern int   hlzoomlevel;
 extern int   hlopcount;
 
+uiEntity *canvas = NULL;
+
 static uiEntity *uiColorPanel(void){
 	uiEntity *p;
 	uiEntity *e;
@@ -111,13 +113,13 @@ static uiEntity *uiToolPanel(void){
 	p->margin_out = 10;
 		
 
-	s = uiSliderNew("Softness",1,0.01,0.99,0.025,0,&softness,NULL);
+	s = uiSliderNew("Softness",1,0.0,0.99,0.01,0,&softness,NULL);
 	uiEntityAlign(s,UI_ALIGN_NORTH);
 	uiEntityFitX(s,1);
 	s->margin_out = 5;
 	uiEntityAdd(s,p);
 
-	s = uiSliderNew("Radius",1,5,10000,0.01,2,&radius,NULL);
+	s = uiSliderNew("Radius",1,1,100000000,0.01,2,&radius,NULL);
 	uiEntityAlign(s,UI_ALIGN_NORTH);
 	uiEntityFitX(s,1);
 	s->margin_out = 5;
@@ -175,15 +177,16 @@ static uiEntity *uiSideBar(void){
 	return te;
 }
 static uiEntity *uiMainScreen(void){
-#define SIZEX 800000.0
-#define SIZEY 600000.0
+#define SIZEX 800000000.0
+#define SIZEY 600000000.0
 	hlCS cs = hlNewCS(HL_8B,HL_RGB);
 	hlColor white = hlNewColor(cs,1,1,1,0,1);
-	hlColor transp = hlNewColor(cs,0.5,0.5,0.5,0,0.1);
-	hlImg *img	= hlNewImg(transp,SIZEX,SIZEY);
+	hlColor gray = hlNewColor(cs,0.5,0.5,0.5,0,1);
+	hlImg *img	= hlNewImg(gray,SIZEX,SIZEY);
 	hlOp *op = NULL;
 	uiEntity *r  = uiDivNew("MainScreen",500,500);
 	uiEntity *hl = uiHlNew("test",img,0,800,600);
+	canvas = hl;
 	op = hlNewOp(HL_DRAW_RECT);
 		hlOpSetAllValue(op,"pos_tl",0.0,0.0);
 		hlOpSetAllValue(op,"pos_br",SIZEX,SIZEY);
@@ -211,6 +214,12 @@ int main(int argc, char **argv){
 	uiScreenSet(s);	
 	uiEntityAdd(uiSideBar(),s);
 	uiEntityAdd(uiMainScreen(),s);
+	uiHlLog("logfile.log");
+	if(argc == 2){
+		fprintf(stdout,"REPLAY: logfile: %s \n",argv[1]);
+		uiHlReplayLog(argv[1],canvas);
+		fprintf(stdout,"REPLAY: end\n");
+	}
 	uiMainLoop();
 	return 0;
 }

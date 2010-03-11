@@ -9,6 +9,11 @@ extern hlOpClass *op_library;
 void hlInit(void){
 	hlOpClass *c;
 
+
+	/* -------------- BBOX OPERATION ----------- */
+
+	c = hlNewOpClass(	"bbox",	"a bounding box",	
+				HL_BBOX_BOX,	HL_BBOX,	NULL);		
 	/* -------------- ADJUSTMENT OPERATION ----------- */
 
 	c = hlNewOpClass(	"skip",	"this operation does nothing",	

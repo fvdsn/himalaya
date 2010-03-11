@@ -15,6 +15,7 @@ hlTile *hlNewTile(hlCS cs){
 	return tile;
 }
 void hlFreeTile(hlTile *tile){
+	fprintf(stdout,"hlFreeTile(%p)\n",(void*)tile);
 	num_tile--;
 	free(tile);
 }
@@ -52,18 +53,9 @@ void hlTileZeroes(hlTile *tile, hlCS cs){
 }
 void hlTileRandom(hlTile *tile, hlCS cs){
 	uint8_t* d8 	= HL_DATA_8B(tile);
-	float* d32 	= HL_DATA_32B(tile);
-	const int chan = hlCSGetChan(cs);
-	int c = chan;
-	int i = HL_TILE_PIXCOUNT*chan;
+	int i = hlTileSize(cs);
 	while(i--){
-		c = chan;
-		while(c--){
-			if(HL_8B == hlCSGetChan(cs))
-				d8[i] = (uint8_t)(random()%255);
-			else
-				d32[i] = (float)(random()%100000)/100000.0;
-		}
+		d8[i] = (uint8_t)(random()%255);
 	}
 }
 void hlTileFill(hlTile *tile, hlColor *col){
@@ -74,8 +66,47 @@ void hlTileFill(hlTile *tile, hlColor *col){
 		memcpy(d8+HL_INDEX(i,bpp),col->color,bpp);
 	}
 }
+void hlTileMult(hlTile *tile, hlColor *col){
+	uint8_t* d8 	= HL_DATA_8B(tile);
+	const int bpp = hlCSGetBpp(hlColorGetCS(col));
+	const uint8_t alpha = col->color[bpp-1];
+	int i = HL_TILE_PIXCOUNT;
+	while(i--){//TODO MAKE IT WORK FOR 32BITS
+		int c = bpp-1;
+		while(c--){
+			d8[i*bpp+c] = (d8[i*bpp+c]*col->color[c]*alpha)/(255*255);
+		}
+	}
+}
 void hlTileCopy(hlTile *dst, const hlTile *src, hlCS cs){
 	memcpy(dst,src,hlTileSize(cs));
+}
+void	hlTileInterp(hlTile *dst, hlCS cs,const hlTile *tl, const hlTile *tr, 
+			const hlTile *br, const hlTile *bl){
+	uint8_t*dst8		= HL_DATA_8B(dst);
+	const uint8_t*tl8	= HL_DATA_8B(tl);
+	const uint8_t*tr8	= HL_DATA_8B(tr);
+	const uint8_t*br8	= HL_DATA_8B(br);
+	const uint8_t*bl8	= HL_DATA_8B(bl);
+	int chan = hlCSGetChan(cs);
+#define H  HL_TILEWIDTH/2
+	int x = H;
+	while(x--){
+		int y = H;
+		while(y--){
+			int c = chan;
+			while(c--){
+				dst8[HL_XYC(x,y,c)] = 	(tl8[HL_XYC(x,y,c)] + tl8[HL_XYC(x+1,y,c)]
+							+ tl8[HL_XYC(x+1,y+1,c)] + tl8[HL_XYC(x,y+1,c)])/4;
+				dst8[HL_XYC(x+H,y,c)] =	(tr8[HL_XYC(x,y,c)] + tr8[HL_XYC(x+1,y,c)]
+							+ tr8[HL_XYC(x+1,y+1,c)] + tr8[HL_XYC(x,y+1,c)])/4;
+				dst8[HL_XYC(x+H,y+H,c)] =	(br8[HL_XYC(x,y,c)] + br8[HL_XYC(x+1,y,c)]
+							+ br8[HL_XYC(x+1,y+1,c)] + br8[HL_XYC(x,y+1,c)])/4;
+				dst8[HL_XYC(x,y+H,c)] =	(bl8[HL_XYC(x,y,c)] + bl8[HL_XYC(x+1,y,c)]
+							+ bl8[HL_XYC(x+1,y+1,c)] + bl8[HL_XYC(x,y+1,c)])/4;
+			}
+		}
+	}			
 }
 float hlTileGetXYC( 	hlTile *tile,
 			hlCS cs,
@@ -159,4 +190,5 @@ void hlPrintTileMem(hlTile *tile, hlCS cs){
 	printf("</hlTile>\n");
 	}while(++x < HL_TILEWIDTH);
 }	
+
 	

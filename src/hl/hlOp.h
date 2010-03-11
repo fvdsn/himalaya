@@ -1,6 +1,6 @@
 #ifndef __HL_OPERATION_H__
 #define __HL_OPERATION_H__
-
+#include <stdio.h> 
 #include "hlDataType.h"
 #include "hlColorSpace.h"
 #include "hlColor.h"
@@ -25,6 +25,7 @@ enum hl_op_id{
 	HL_BLEND_MULT,
 	HL_DRAW_RECT,
 	HL_DRAW_CIRCLE,
+	HL_BBOX_BOX,
 	HL_OP_COUNT
 };
 
@@ -61,6 +62,7 @@ int	hlBBoxTest(const hlBBox *box, int tx, int ty, int tz);
  * @param box2 : the box that will be inside box1
  */
 void	hlBBoxExtend(hlBBox *box1, const hlBBox *box2);
+int	hlBBoxArea(const hlBBox *box);
 
 struct hl_op{
 	struct hl_op* down;
@@ -75,6 +77,9 @@ struct hl_op{
 
 	struct hl_op* skip;	/*if tile not in bbox, go to skip instead of down */
 	hlBBox bbox; 	/* bounding box of the operations effects */
+	int open; /*if 1, the bbox is open and can be modified to fit new operations*/
+	int depth;
+	int max_depth;
 
 	void (*render)(hlTile *dst, hlOp *p);
 
@@ -109,6 +114,11 @@ hlOp* 	hlNewOp(int id);
 hlOp* 	hlDupOp(hlOp *p);
 void 	hlFreeOp(hlOp* op);	/*TODO referenced states ... */
 void 	hlPrintOp(hlOp *op);
+enum hl_graph_display{
+	HL_GRAPH_FULL,
+	HL_GRAPH_SIMPLE
+};
+void	hlGraphOp(FILE *f,const hlOp *op, int display);
 
 /*------------- OPERATION ARGUMENTS ---------- */
 
@@ -271,8 +281,9 @@ hlTile *hlOpCacheRemove(hlOp* op, int x, int y, int z);
 /*places a copy of the tile in the cache. frees the original one,
  * if it exists. tile should not be NULL. WARNING : any modification of
  * the tile after it has been set will modify the tile in the cache 
- * as well, use hlTileDup() */
-void 	hlOpCacheSet(hlOp* op, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty,int tz);
+ * as well, use hlTileDup() 
+ * @return 1 if the tile could be set in cache 0 otherwise*/
+int 	hlOpCacheSet(hlOp* op, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty,int tz);
 
 /*returns the tile in the cache. returns NULL if there is no tile in
  * the cache. WARNING any modification of the returned tile will modify

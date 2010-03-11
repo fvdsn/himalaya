@@ -7,14 +7,15 @@
 #include "hlImg.h"
 #include "hlBlendOp.h"
 #include "hlDrawOp.h"
+#define HL_OVERSAMPLING 1
 
 extern int num_img;
 
 hlImg* hlNewImg(hlColor color,int sx, int sy){
 	hlImg* img = (hlImg*)malloc(sizeof(hlImg));
 	img->top 	= NULL;
-	img->region 	= hlNewRegion(0,0,sx,sy,0);
 	img->statelib 	= hlNewHash(1009);
+	img->statelist	= hlNewList();
 	img->state 	= HL_STATE_UNSAVED;
 	img->source 	= hlNewFrame(color,sx,sy);
 	num_img++;
@@ -24,11 +25,8 @@ hlImg* hlNewImg(hlColor color,int sx, int sy){
 hlImg* hlNewImgFromSource(hlFrame *frame){
 	hlImg* img = (hlImg*)malloc(sizeof(hlImg));
 	img->top 	= NULL;
-	img->region 	= hlNewRegion(	0,0,
-					hlFrameSizeX(frame,0),
-					hlFrameSizeY(frame,0),
-					0 			);
 	img->statelib 	= hlNewHash(1009);
+	img->statelist	= hlNewList();
 	img->state 	= HL_STATE_UNSAVED;
 	img->source 	= frame;
 	hlFrameMipMap(frame);	/*TODO remove that requirement */ 
@@ -38,7 +36,7 @@ hlImg* hlNewImgFromSource(hlFrame *frame){
 
 /*------------- STATE -------------*/
 
-static hlOp* hl_img_get_top_op(hlImg *img, hlState state){
+static hlOp* hl_img_get_top_op(const hlImg *img, hlState state){
 	if(state != HL_STATE_UNSAVED && state != HL_STATE_CURRENT){
 		return (hlOp*)hlHashGet(img->statelib,state);
 	}
@@ -54,7 +52,12 @@ static hlState hl_get_new_state(void){
 hlState hlImgStateSave(hlImg *img){
 	hlState state = hl_get_new_state();
 	hlOp * op = img->top;
+	if(!op){
+		return 0;
+	}
+	hlImgCloseAllBBox(img);
 	hlHashAdd(img->statelib,(int)state,op);
+	hlListAppend(img->statelist,(void*)state);
 	hlOpCacheEnable(op,1);
 	while(op){
 		op->refcount++;
@@ -125,6 +128,7 @@ hlState hlImgStateExists(hlImg *img, hlState state){
 hlState hlImgStateRem(hlImg *img, hlState remstate){
 	hlOp *op = NULL;
 	hlOp *tmp = NULL;
+	fprintf(stdout,"hlImgStateRem(...)");
 	assert(remstate != img->state);
 	assert(remstate != HL_STATE_UNSAVED);
 	assert(hlImgStateExists(img,remstate));
@@ -139,15 +143,8 @@ hlState hlImgStateRem(hlImg *img, hlState remstate){
 		op = tmp;
 	}
 	hlHashRem(img->statelib,remstate);
+	hlListRemAllData(img->statelist,(void*)remstate);
 	return 0;
-}
-
-/* 	hlImgSetRegion(...) 	*/
-void hlImgSetRegion(hlImg *img, hlRegion r){
-	img->region = r;
-}
-hlRegion hlImgGetRegion(hlImg *img){
-	return img->region;
 }
 
 /*------------- OPERATION -------------*/
@@ -212,12 +209,59 @@ hlOpRef hlImgPopOp(hlImg *img){
 		return 0;
 	}
 }
+/*static void hl_img_close_box_op(hlOp *up,hlOp* op){
+	while(op->down && op->down->type == HL_BBOX && op->down->open){
+		up->down = op->down;
+		op->down = op->down->down;
+		up->down->down = op;
+		up = up->down;
+	}
+	op->open = 0;
+}*/
+
 hlOpRef hlImgPushOp(hlImg *img, hlOp* op){
+	hlOp *tmp = img->top;
+	hlOp *up = NULL;
 	hlOpSetBBox(op);
 	hlOpSetCSIn(op,hlFrameCS(img->source));
-	insert_op(NULL,op,img->top);
+	fprintf(stdout,"pushop\n");
+	while(tmp && tmp->type == HL_BBOX && tmp->open && (tmp->max_depth > op->max_depth)){
+		if(op->type != HL_BBOX){
+			hlBBoxExtend(&(tmp->bbox),&(op->bbox));
+			tmp->depth++;
+			if(tmp->depth >= tmp->max_depth && tmp->max_depth > 0){
+				tmp->open = 0;
+				hlImgPushOpenBBox(img,tmp->max_depth);
+			}
+			/*	hlOp* new = hlNewOp(HL_BBOX_BOX);
+			hlOpSetCSIn(new,hlFrameCS(img->source));
+			fprintf(stdout,"new_box :%d\n",tmp->max_depth);
+			tmp->open = 0;
+			new->open = 1;
+			new->skip = tmp;
+			new->down = tmp;
+			new->max_depth = tmp->max_depth;
+			if(up){
+				up->down = new;
+			}else{
+				img->top = new;
+			}
+			hl_img_close_box_op(new,tmp);
+			up = new;
+			tmp = new->down;*/
+		}
+		up = tmp;
+		tmp = tmp->down;
+	}	
+	insert_op(up,op,tmp);
+	if(up == NULL){
+		img->top    = op;
+	}
+	if(op->type == HL_BBOX && op->open){
+		op->skip = op->down;
+		op->depth = 0;
+	}
 	img->state  = HL_STATE_UNSAVED;
-	img->top    = op;
 	op->img = img;
 	return op->ref;
 }
@@ -286,252 +330,43 @@ void hlImgModOpEnd(hlImg *img, hlOpRef ref){
 	}
 }
 
-/* 	hlOpRenderTile(...) 		*/
-/*
-static hlTile *hl_op_render_adj(hlOp* op, bool top, int x, int y, int z){
-	const hlCS cs = hlOpGetCSIn(op);
-	hlTile *tile = hlOpCacheGet(op,x,y,z);
-	if(tile){ 			@*found in cache*@
-		if(top){
-			return tile;
-		}
-		else {@* 
-			tile = hlTileDup(tile,cs);
-			if (op->caching){
-				return tile;
-			}
-			else{
-				hlOpCacheRemove(op,x,y,z);
-				return tile;
-			}
-			@/
-			if (op->caching){
-				return  hlTileDup(tile,cs);
-			}
-			else{
-				return hlOpCacheRemove(op,x,y,z);
-			}
-		}
-	}
-	else{ 				@*tile not in cache*@
-		if(op->down){
-			tile = hlOpRenderTile(op->down,0,x,y,z);
-		}
-		else{
-			tile = hlFrameTileCopy(op->img->source,x,y,z);
-		}
-		op->render(tile,op);
-		if(op->caching || top ){ 	@*put tile in cache*@
-			if(top){
-				hlOpCacheSet(op,tile,cs,
-						hlImgSizeX(op->img,0),
-						hlImgSizeY(op->img,0),
-						x,y,z);
-				return tile;
-			}
-			else{
-				hlOpCacheSet(op,tile,cs,
-						hlImgSizeX(op->img,0),
-						hlImgSizeY(op->img,0),
-						x,y,z);
-				return hlTileDup(tile,cs);
-			}
-		}
-		else{
-			return tile;
-		}
-	}
-}
-static hlTile *hl_op_render_blend(hlOp* op, bool top, int x, int y, int z){
-	const hlCS cs = hlOpGetCSIn(op);
-	hlTile *tile = hlOpCacheGet(op,x,y,z);
-	const hlTile *tileup = hlImgTileRead(	hlOpGetAllImg(op)[0],
-					hlOpGetAllState(op)[0],
-					x,y,z	);
-	if(tile){ 			@*found in cache*@
-		if(top){
-			return tile;
-		}
-		else {	@* if not top we need to return a duplicate of the
-			tile, because the tile we return will be modified
-			further *@
-			tile = hlTileDup(tile,cs);
-			if (op->caching){
-				return tile;
-			}
-			else{
-				hlOpCacheRemove(op,x,y,z);
-				return tile;
-			}
-		}
-	}
-	else{ 				@*tile not in cache*/
-		/* since the result of the operation was not cached,
-		 * we need to render it, for that we need the tile result
-		 * of the previous operation. we will overwrite the
-		 * result of the current op on that tile and return it *@
-		if(op->down){
-			tile = hlOpRenderTile(op->down,0,x,y,z);
-		}
-		else{
-			tile = hlFrameTileCopy(op->img->source,x,y,z);
-		}
-		hlBlendOp(tile,tileup,op);
-		if(op->caching || top ){ 	@*put tile in cache*@
-			if(top){
-				hlOpCacheSet(	op,tile,cs,
-						hlImgSizeX(op->img,0),
-						hlImgSizeY(op->img,0),
-						x,y,z);
-				return tile;
-			}
-			else{	@* if not top operation, the tile will
-				be modified later, so we return a copy
-				of the tile *@
-				hlOpCacheSet(	op,tile,cs,
-						hlImgSizeX(op->img,0),
-						hlImgSizeY(op->img,0),
-						x,y,z);
-				return hlTileDup(tile,cs);
-			}
-		}
-		else{
-			return tile;
-		}
-	}
-}
-static hlTile* hl_op_render_draw_vector(hlOp *op, int opindex,  bool top, int x, int y, int z){
-	hlCS cs = hlOpGetCSIn(op);
-	hlTile *tile = NULL;
-	hlVec *v = op->vector;
+/*------------- BBOX -------------*/
 
-	if(opindex < 0){
-		if(op->down){
-			return  hlOpRenderTile(op->down,0,x,y,z);
-		}else{
-			return hlFrameTileCopy(op->img->source,x,y,z);
+hlOpRef hlImgPushOpenBBox(hlImg *img,int max_depth){
+	hlOp *op = hlNewOp(HL_BBOX_BOX);
+	hlOpRef ref = hlImgPushOp(img,op);
+	op->skip = op->down;
+	op->open = 1;
+	op->depth = 0;
+	op->max_depth = max_depth;
+	op->bbox.infinite = 0;
+	return ref;
+}
+void  hlImgCloseBBox(hlImg *img){
+	hlOp *op = hl_img_get_top_op(img,HL_STATE_UNSAVED);
+	while(op && op->type == HL_BBOX && op->refcount == 0 ){
+		if(!op->down){
+			op->open = 0;
+			return;
+		}else if(op->down->type != HL_BBOX){
+			op->open = 0;
+			return;
+		}else if(op->down->open == 0){
+			op->open = 0;
+			return;
 		}
-	}	
-
-	tile = hlVecCacheGet(v,opindex,x,y,z);
-	if(tile){
-		if(top && opindex == v->opcount-1){
-			return tile;
-		}else{
-			if(op->caching && opindex == v->opcount-1) {
-				return hlTileDup(tile,cs);
-				//return tile;
-			}else{
-				return hlVecCacheRemove(v,opindex,x,y,z);
-			}
-		}
+		op = op->down;
 	}
-	@* tile was not in cache, we need to get the tile of the operation below to
-	 * draw on it. But if we are at the top index of the vector and the
-	 * tile is outside the vector drawing bounding box, there is nothing to
-	 * render and we directly get the tile of the operation below
-	 *@
-	if(opindex == v->opcount -1 && !hlBBoxTest(&(op->bbox),x,y,(int)z)){
-		if(op->down){
-			tile = hlOpRenderTile(op->down,0,x,y,z);
-		}else{
-			tile = hlFrameTileCopy(op->img->source,x,y,z);
-		}
-	}else{
-		@* we could not skip the vector, we need to get the tile from
-		 * lower vector index *@
-		tile = hl_op_render_draw_vector(op,opindex-1,0,x,y,z);
-		@*now we can draw on our tile !*@
-		hlDrawVec(tile,op,opindex,x,y,z);
-	}
-	@* at this point we have a tile not yet in cache anywhere in the
-	 * vector. maybe we need to put it in cache *@
-	if(opindex == v->opcount -1 && (op->caching || top)){
-		if(top){
-			hlVecCacheSet(v,opindex,tile,cs,
-						hlImgSizeX(op->img,0),
-						hlImgSizeY(op->img,0),
-						x,y,z);
-			return tile;
-		}else{
-			hlVecCacheSet(v,opindex,tile,cs,
-						hlImgSizeX(op->img,0),
-						hlImgSizeY(op->img,0),
-						x,y,z);
-			return hlTileDup(tile,cs);
-			//return tile;
-		}
-	}else{
-		return tile;
+	printf("WARNING Cannot close BBox : Nothing to close\n");
+}
+void hlImgCloseAllBBox(hlImg *img){
+	hlOp *op = hl_img_get_top_op(img,HL_STATE_UNSAVED);
+	while(op && op->type == HL_BBOX){
+		op->open = 0;
+		op = op->down;
 	}
 }
-static hlTile *hl_op_render_draw(hlOp* op, bool top, int x, int y, int z){
-	hlCS cs = hlOpGetCSIn(op);
-	hlTile *tile = NULL;
-	if(op->vector){
-		return hl_op_render_draw_vector(op,
-				op->vector->opcount-1,
-				top,x,y,z);
-	}
-	tile = hlOpCacheGet(op,x,y,z);
-	if(tile){ 			@*found in cache*@
-		if(top){
-			return tile;
-		}
-		else { 
-			if (op->caching){
-				return hlTileDup(tile,cs);
-			}
-			else{
-				return hlOpCacheRemove(op,x,y,z);
-			}
-		}
-	}
-	else{ 				@*tile not in cache*@
-		if(op->down){
-			tile = hlOpRenderTile(op->down,0,x,y,z);
-		}
-		else{
-			tile = hlFrameTileCopy(op->img->source,x,y,z);
-		}
-		if(hlBBoxTest(&(op->bbox),x,y,(int)z)){
-			hlDrawOp(tile,op,x,y,z);
-		}
-		if(op->caching || top ){ 	@*put tile in cache*@
-			if(top){
-				hlOpCacheSet(op,tile,cs,
-						hlImgSizeX(op->img,0),
-						hlImgSizeY(op->img,0),
-						x,y,z);
-				return tile;
-			}
-			else{
-				hlOpCacheSet(op,tile,cs,
-						hlImgSizeX(op->img,0),
-						hlImgSizeY(op->img,0),
-						x,y,z);
-				return hlTileDup(tile,cs);
-			}
-		}
-		else{
-			return tile;
-		}
-	}
-}
-hlTile *hlOpRenderTile(hlOp* op, bool istop, int x, int y, int z){
-	switch (op->type){
-		case HL_ADJUSTMENT:
-			return hl_op_render_adj(op,istop,x,y,z);
-		case HL_BLENDING:
-			return hl_op_render_blend(op,istop,x,y,z);
-		case HL_DRAW:
-			return hl_op_render_draw(op,istop,x,y,z);
-		default:
-			assert(0 && "operation type not supported");
-			return NULL;
-	}
-}
-*/
+/*------------- RENDER -------------*/
 
 /* 	hlOpRenderTile(...) 		*/
 static int hl_op_must_free_cache(hlOp *op, int x, int y, int z){
@@ -540,12 +375,12 @@ static int hl_op_must_free_cache(hlOp *op, int x, int y, int z){
 static int hl_op_must_cache(hlOp *op, int x, int y, int z){
 	return op->caching;
 }
-static hlTile *hl_op_render_adj(hlOp*op, int cache, int x, int y, int z){
+static hlTile *hl_op_render_adj(hlOp*op, int cache, int readonly, int osa, int x, int y, int z){
 	const hlCS cs = hlOpGetCSIn(op);
 	hlTile *tile = hlOpCacheGet(op,x,y,z);
 	if(tile){	/* found in cache */
-		if(cache) {
-			return NULL;
+		if(readonly) {
+			return tile;
 		}else if(hl_op_must_free_cache(op,x,y,z)){
 			return hlOpCacheRemove(op,x,y,z);
 		}else{
@@ -553,7 +388,7 @@ static hlTile *hl_op_render_adj(hlOp*op, int cache, int x, int y, int z){
 		}
 	}else{		/* not found in cache */
 		if(op->down){
-			tile = hlOpRenderTile(op->down,0,x,y,z);
+			tile = hlOpRenderTile(op->down,0,0,osa,x,y,z);
 		}else{
 			tile = hlFrameTileCopy(op->img->source,x,y,z);
 		}
@@ -563,12 +398,13 @@ static hlTile *hl_op_render_adj(hlOp*op, int cache, int x, int y, int z){
 		}
 		op->render(tile,op);
 		if(cache || hl_op_must_cache(op,x,y,z)){
-			hlOpCacheSet(op,tile,cs,
+			int cached = hlOpCacheSet(op,tile,cs,
 					hlImgSizeX(op->img,0),
 					hlImgSizeY(op->img,0), 
 					x,y,z);
-			if(cache){
-				return NULL;
+			//TODO tile can still leak in here ... :S
+			if(readonly || !cached){
+				return tile;
 			}else{
 				return hlTileDup(tile,cs);
 			}
@@ -576,12 +412,12 @@ static hlTile *hl_op_render_adj(hlOp*op, int cache, int x, int y, int z){
 		return tile;
 	}
 }
-static hlTile *hl_op_render_group(hlOp*op, int cache, int x, int y, int z){
+static hlTile *hl_op_render_group(hlOp*op, int cache, int readonly, int osa, int x, int y, int z){
 	const hlCS cs = hlOpGetCSIn(op);
 	hlTile *tile = hlOpCacheGet(op,x,y,z);
 	if(tile){	/* found in cache */
-		if(cache) {
-			return NULL;
+		if(readonly) {
+			return tile;
 		}else if(hl_op_must_free_cache(op,x,y,z)){
 			return hlOpCacheRemove(op,x,y,z);
 		}else{
@@ -589,7 +425,7 @@ static hlTile *hl_op_render_group(hlOp*op, int cache, int x, int y, int z){
 		}
 	}else{		/* not found in cache */
 		if(op->down){
-			tile = hlOpRenderTile(op->down,0,x,y,z);
+			tile = hlOpRenderTile(op->down,0,0,osa,x,y,z);
 		}else{
 			tile = hlFrameTileCopy(op->img->source,x,y,z);
 		}
@@ -599,12 +435,12 @@ static hlTile *hl_op_render_group(hlOp*op, int cache, int x, int y, int z){
 		}
 		op->render(tile,op);
 		if(cache || hl_op_must_cache(op,x,y,z)){
-			hlOpCacheSet(op,tile,cs,
+			int cached = hlOpCacheSet(op,tile,cs,
 					hlImgSizeX(op->img,0),
 					hlImgSizeY(op->img,0), 
 					x,y,z);
-			if(cache){
-				return NULL;
+			if(readonly || !cached){
+				return tile;
 			}else{
 				return hlTileDup(tile,cs);
 			}
@@ -612,13 +448,13 @@ static hlTile *hl_op_render_group(hlOp*op, int cache, int x, int y, int z){
 		return tile;
 	}
 }
-static hlTile *hl_op_render_blend(hlOp*op, int cache, int x, int y, int z){
+static hlTile *hl_op_render_blend(hlOp*op, int cache, int readonly, int osa, int x, int y, int z){
 	const hlCS cs = hlOpGetCSIn(op);
 	hlTile *tile = hlOpCacheGet(op,x,y,z);
 	const hlTile *tileup = NULL;
 	if(tile){	/* found in cache */
-		if(cache) {
-			return NULL;
+		if(readonly) {
+			return tile;
 		}else if(hl_op_must_free_cache(op,x,y,z)){
 			return hlOpCacheRemove(op,x,y,z);
 		}else{
@@ -633,7 +469,7 @@ static hlTile *hl_op_render_blend(hlOp*op, int cache, int x, int y, int z){
 			tileup = hlNewTile(cs);
 		}
 		if(op->down){
-			tile = hlOpRenderTile(op->down,0,x,y,z);
+			tile = hlOpRenderTile(op->down,0,0,osa,x,y,z);
 		}else{
 			tile = hlFrameTileCopy(op->img->source,x,y,z);
 		}
@@ -643,12 +479,12 @@ static hlTile *hl_op_render_blend(hlOp*op, int cache, int x, int y, int z){
 		}
 		hlBlendOp(tile,tileup,op);
 		if(cache || hl_op_must_cache(op,x,y,z)){
-			hlOpCacheSet(op,tile,cs,
+			int cached = hlOpCacheSet(op,tile,cs,
 					hlImgSizeX(op->img,0),
 					hlImgSizeY(op->img,0), 
 					x,y,z);
-			if(cache){
-				return NULL;
+			if(readonly || !cached){
+				return tile;
 			}else{
 				return hlTileDup(tile,cs);
 			}
@@ -656,50 +492,37 @@ static hlTile *hl_op_render_blend(hlOp*op, int cache, int x, int y, int z){
 		return tile;
 	}
 }
-static hlTile *hl_op_render_bbox(hlOp*op, int cache, int x, int y, int z){
-	const hlCS cs = hlOpGetCSIn(op);
-	hlTile *tile = hlOpCacheGet(op,x,y,z);
-	if(tile){
-		if(cache){
-			return NULL;
-		}else if(hl_op_must_free_cache(op,x,y,z)){
-			return hlOpCacheRemove(op,x,y,z);
+static hlTile *hl_op_render_bbox(hlOp*op, int cache, int readonly, int osa, int x, int y, int z){
+	hlTile *tile = NULL;
+	//hlColor cinside = hlNewColor(hlOpGetCSIn(op),0.9,1.0,0.9,0,1.0);
+	//hlColor cbox = hlNewColor(hlOpGetCSIn(op),0.99,0.99,1.0,0,1.0);
+	if(hlBBoxTest(&(op->bbox),x,y,z)){ /* we are inside bbox */
+		if(op->down){
+			tile = hlOpRenderTile(op->down,cache,readonly,osa,x,y,z);
 		}else{
-			return hlTileDup(tile,cs);
+			tile = hlFrameTileCopy(op->img->source,x,y,z);
 		}
+		//if(!readonly){
+		//	hlTileMult(tile,&cinside);
+		//}
 	}else{
-		if(hlBBoxTest(&(op->bbox),x,y,z)){ /* we are inside bbox */
-			if(op->down){
-				tile = hlOpRenderTile(op->down,0,x,y,z);
-			}else{
-				tile = hlFrameTileCopy(op->img->source,x,y,z);
-			}
+		if(op->skip){
+			tile = hlOpRenderTile(op->skip,cache,readonly,osa,x,y,z);
 		}else{
-			if(op->skip){
-				tile = hlOpRenderTile(op->skip,0,x,y,z);
-			}else{
-				tile = hlFrameTileCopy(op->img->source,x,y,z);
-			}
+			tile = hlFrameTileCopy(op->img->source,x,y,z);
 		}
-		if(cache || hl_op_must_cache(op,x,y,z)){
-			hlOpCacheSet(op,tile,cs,hlImgSizeX(op->img,0),
-					hlImgSizeY(op->img,0),
-					x,y,z);
-			if(cache){
-				return NULL;
-			}else{
-				return hlTileDup(tile,cs);
-			}
-		}
-		return tile;
 	}
+	//if(!readonly){
+	//	hlTileMult(tile,&cbox);
+	//}
+	return tile;
 }
-static hlTile *hl_op_render_draw(hlOp*op, int cache, int x, int y, int z){
+static hlTile *hl_op_render_draw(hlOp*op, int cache, int readonly, int osa, int x, int y, int z){
 	const hlCS cs = hlOpGetCSIn(op);
 	hlTile *tile = hlOpCacheGet(op,x,y,z);
 	if(tile){	/* found in cache */
-		if(cache) {
-			return NULL;
+		if(readonly) {
+			return tile;
 		}else if(hl_op_must_free_cache(op,x,y,z)){
 			return hlOpCacheRemove(op,x,y,z);
 		}else{
@@ -707,20 +530,27 @@ static hlTile *hl_op_render_draw(hlOp*op, int cache, int x, int y, int z){
 		}
 	}else{		/* not found in cache */
 		if(op->down){
-			tile = hlOpRenderTile(op->down,0,x,y,z);
+			tile = hlOpRenderTile(op->down,0,0,osa,x,y,z);
 		}else{
 			tile = hlFrameTileCopy(op->img->source,x,y,z);
 		}
 		if(hlBBoxTest(&(op->bbox),x,y,z)){
-			hlDrawOp(tile,op,x,y,z);
+			if(hlDrawOp(tile,op,x,y,z) && osa && z){
+				/*hlTile  *t1,*t2,*t3,*t4;
+				t1 = hlOpRenderTile(op,1,1,osa-1,x*2,  y*2,  z-1);
+				t2 = hlOpRenderTile(op,1,1,osa-1,x*2+1,y*2,  z-1);
+				t3 = hlOpRenderTile(op,1,1,osa-1,x*2+1,y*2+1,z-1);
+				t4 = hlOpRenderTile(op,1,1,osa-1,x*2,  y*2+1,z-1);
+				hlTileInterp(tile,cs,t1,t2,t3,t4);*/
+			}
 		}
 		if(cache || hl_op_must_cache(op,x,y,z)){
-			hlOpCacheSet(op,tile,cs,
+			int cached = hlOpCacheSet(op,tile,cs,
 					hlImgSizeX(op->img,0),
 					hlImgSizeY(op->img,0), 
 					x,y,z);
-			if(cache){
-				return NULL;
+			if(readonly || !cached){
+				return tile;
 			}else{
 				return hlTileDup(tile,cs);
 			}
@@ -728,19 +558,18 @@ static hlTile *hl_op_render_draw(hlOp*op, int cache, int x, int y, int z){
 		return tile;
 	}
 }
-
-hlTile *hlOpRenderTile(hlOp*op, int cache, int x, int y, int z){
+hlTile *hlOpRenderTile(hlOp*op, int cache, int readonly, int osa ,int x, int y, int z){
 	switch (op->type){
 		case HL_ADJUSTMENT:
-			return hl_op_render_adj(op,cache,x,y,z);
+			return hl_op_render_adj(op,cache,readonly,osa,x,y,z);
 		case HL_BLENDING:
-			return hl_op_render_blend(op,cache,x,y,z);
+			return hl_op_render_blend(op,cache,readonly,osa,x,y,z);
 		case HL_DRAW:
-			return hl_op_render_draw(op,cache,x,y,z);
+			return hl_op_render_draw(op,cache,readonly,osa,x,y,z);
 		case HL_BBOX:
-			return hl_op_render_bbox(op,cache,x,y,z);
+			return hl_op_render_bbox(op,cache,readonly,osa,x,y,z);
 		case HL_GROUP:
-			return hl_op_render_group(op,cache,x,y,z);
+			return hl_op_render_group(op,cache,readonly,osa,x,y,z);
 		default:
 			assert(0 && "operation type not supported");
 			return NULL;
@@ -776,6 +605,87 @@ void hlPrintImg(hlImg *img, hlState state){
 	return;
 }
 
+void hlGraphImg(FILE *f,const hlImg *img,int display){
+	hlOp *op = NULL;
+	hlHash * drawn_node = hlNewHash(1009);
+	hlHash * drawn_edge = hlNewHash(1009);
+	if(!f){
+		fprintf(stderr,"FAILURE : cannot print img graph on NULL file\n");
+		return;
+	}
+	if(!img){
+		fprintf(stderr,"WARNING : cannot print img graph of NULL img\n");
+		return;
+	}
+	fprintf(f,"digraph img { \n rankdir = \"LR\"; size = \"20,100\";\n");
+	fprintf(f,"img [ shape = record, color = green, label = \n");
+	fprintf(f,"\"Img |<top> top | <state> state : %d | region: (...) | <statelib> statelib : %p | <source> source : %p \"];\n",
+		img->state,(void*)img->statelib,(void*)img->source);
+	/* source */
+	if(img->source){
+		fprintf(f,"frame_%p [ shape = record, color = blue, label = \"Frame | tilecount : %d \"];\n",
+			(void*)img->source, hlFrameTileCount(img->source));
+		fprintf(f,"img:source -> frame_%p [color = blue] \n",(void*)img->source);
+	}	
+
+	/* op nodes */
+	op = img->top;
+	while(op){
+		hlGraphOp(f,op,display);
+		fprintf(f,"\n");
+		hlHashAdd(drawn_node,(int)op,op);
+		op = op->down;
+	}
+	op = img->top;
+	/* links between op nodes */
+	while(op){
+		if(op->down){
+			hlHashAdd(drawn_edge,(int)op,op);
+			fprintf(f," op_%p -> op_%p \n",(void*)op,(void*)op->down);
+		}
+		fprintf(f,"\n");
+		op = op->down;
+	}
+	/* top link */
+	if(img->top){
+		fprintf(f,"img:top -> op_%p \n",(void*)img->top);
+	}
+	/* States */
+	
+	if(img->statelist){
+		hlLNode *n = img->statelist->first;
+		fprintf(f,"{rank = same;\n");
+		while(n){
+			fprintf(f,"state_%d;\n",(int)(n->data));
+			n = n->next;
+		}
+		fprintf(f,"}\n");
+		n = img->statelist->first;
+		while(n){
+			int s = (int)(n->data);
+			fprintf(f,"img:statelib -> state_%d;\n",s);
+			fprintf(f,"state_%d -> op_%p;\n",s,(void*)hlHashGet(img->statelib,s));
+			n = n->next;
+			op = hl_img_get_top_op(img,s);
+			while(op && !hlHashGet(drawn_node,(int)op)){
+				hlHashAdd(drawn_node,(int)op,op);
+				hlGraphOp(f,op,display);
+				fprintf(f,"\n");
+				op = op->down;
+			}
+			op = hl_img_get_top_op(img,s);
+			while(op && !hlHashGet(drawn_edge,(int)op)){
+				if(op->down){
+					hlHashAdd(drawn_edge,(int)op,op);
+					fprintf(f," op_%p -> op_%p \n",(void*)op,(void*)op->down);
+				}
+				fprintf(f,"\n");
+				op = op->down;
+			}
+		}
+	}
+	fprintf(f,"}\n");
+}
 /* 	hlImgSize_(...)	/ hlImgTile_(...)	*/
 int hlImgSizeX(hlImg *img, int z){
 	return hlFrameSizeX(img->source,z);
@@ -804,59 +714,87 @@ hlCS	hlImgCS(hlImg *img){
 /* 	hlImgTileRead(...) / hlImgTileCopy(...) */
 hlTile *hlImgTileRead(hlImg *img, hlState state, int tx, int ty, int tz){
 	hlOp *top = hl_img_get_top_op(img,state);
+	hlTile *t = NULL;
 	if(top){ 
-		assert(top->cache);
-		return hlFrameTileRead(top->cache,tx,ty,tz);
+		t = hlOpRenderTile(top,true,1,HL_OVERSAMPLING,tx,ty,tz);
+	}else{
+		t = hlFrameTileRead(img->source,tx,ty,tz);
 	}
-	else{
-		return hlFrameTileRead(img->source,tx,ty,tz);
+	if(!t){
+		fprintf(stderr,"ERROR: could not read image tile; img:%p state:%d, tx:%d,ty:%d,tz:%d\n",
+				(void*)img,state,tx,ty,tz);
 	}
+	return t;
 }
 hlTile *hlImgTileCopy(hlImg *img, hlState state, int x, int y, int z){
 	return hlTileDup(hlImgTileRead(img,state,x,y,z),hlImgCS(img));
 }
 
-/* 	hlImgRender__(...) 		*/
-void hlImgRenderTile(hlImg *img, hlState state, int x, int y, int z){
-	hlOp *top = hl_img_get_top_op(img,state);
-	if (top){
-		hlOpRenderTile(top,true,x,y,z);
+/*	hlImgToRaw(...) / hlImgToNewRaw(...) */
+static void hl_tile_to_raw(hlTile *t, hlRaw *raw, int px, int py){
+	const int sx = hlRawSizeX(raw);
+	const int sy = hlRawSizeY(raw);
+	const int bpp = hlCSGetBpp(hlRawCS(raw));
+	uint8_t * tiledata = HL_DATA_8B(t);
+	int ptx = 0;	/* top left point on tile */
+	int pty = 0;
+	int prx = px;	/* top left point on raw */
+	int pry = py;
+	int psx = HL_TILEWIDTH;	/* size of copy region */
+	int psy = HL_TILEWIDTH;
+	int y;
+	if(px <= -HL_TILEWIDTH || py <= -HL_TILEWIDTH || px >= sx || py >=sy ||sx <= 0 || sy <=0){
+		printf("rejected px,py:%d,%d\n",px,py);
+		return;
+	}
+	if(px < 0){ 
+		ptx = -px;
+		psx += px;
+		prx = 0;
+	}
+	if(py < 0){ 
+		pty = -py;
+		psy += py;
+		pry = 0;
+	}
+	if(px + HL_TILEWIDTH > sx){
+		psx -= (px + HL_TILEWIDTH - sx);
+	}
+	if(py + HL_TILEWIDTH > sy){
+		psy -= (py + HL_TILEWIDTH - sy);
+	}
+	y = psy;
+	if(psy <= 0 ){
+		printf("rejected\n");
+	}
+	while(y-- > 0){
+		memcpy(	raw->data +(prx+sx*(pry+y))*bpp,
+			tiledata + (ptx+HL_TILEWIDTH*(pty+y))*bpp,
+			psx*bpp);
 	}
 }
-void hlImgRenderRegion(hlImg *img, hlRegion r, hlState state){
-	hlOp *top = hl_img_get_top_op(img,state);
-	int x = r.tx;
-	int y = r.ty;
-	while(y--){
-		x = r.tx;
-		while(x--){
-			if(top){
-			hlOpRenderTile(	top,true,
-					r.ptx + x,
-					r.pty + y,
-					r.z	);
+void hlImgRender(hlImg *img, hlState s, hlRaw *raw,int px, int py,int z){
+	hlRegion r = hlNewRegion(px,py,hlRawSizeX(raw),hlRawSizeY(raw),z);
+	hlTile *t = NULL;
+	int x,y;	/*tile index*/
+	int rx,ry;	/*top left pixel in raw where current tile will be copied */
+	x = r.tx;	
+	while(x--){
+		y = r.ty;
+		while(y--){
+			rx = (r.ptx+x)*HL_TILEWIDTH -px;
+			ry = (r.pty+y)*HL_TILEWIDTH -py;
+			t = hlImgTileRead(img,s,r.ptx+x,r.pty+y, r.z );
+			if(t){
+				hl_tile_to_raw(t,raw,rx,ry);
 			}
 		}
 	}
 }
-
-hlFrame * hlImgReadFrame(hlImg *img, hlState state){
-	hlOp* top = hl_img_get_top_op(img,state);
-	if(top){
-		return top->cache;
-	}
-	else{
-		return img->source;
-	}
-}
-hlRaw *hlImgRenderNewRaw(hlImg *img, hlRegion r, hlState state){
-	hlImgRenderRegion(img,r,state);
-	return hlRawFromRegion(hlImgReadFrame(img,state),r);
-}
-void  hlImgRenderToRaw(hlImg *img, hlRaw *raw, hlState state, int px, int py, int z){
-	hlImgRenderRegion(img, 
-		hlNewRegion(px,py,hlRawSizeX(raw),hlRawSizeY(raw),z),state);
-	hlRegionToRaw(hlImgReadFrame(img,state),raw,px,py,z);
+hlRaw *hlImgRenderNewRaw(hlImg *img, hlState s, hlRegion r){
+	hlRaw *raw = hlNewRaw(hlImgCS(img),r.sx,r.sy);
+	hlImgRender(img,s,raw,r.px,r.py,r.z);
+	return raw;
 }
 
 	

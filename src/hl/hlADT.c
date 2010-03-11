@@ -1,6 +1,7 @@
 #include<stdlib.h>
 #include<assert.h>
 #include<stdio.h>
+#include<string.h>
 #include"hlADT.h"
 
 
@@ -11,6 +12,7 @@ hlHash *hlNewHash(int size){
 	hlHash *h = (hlHash*)malloc(sizeof(hlHash));
 	assert(size);
 	h->table = (hlHNode**)malloc(size * sizeof(hlHNode*));
+	memset(h->table,0,size*sizeof(hlHNode*));
 	h->size = size;
 	h->objcount = 0;
 	return h;
@@ -81,19 +83,130 @@ void *hlHashRem(hlHash *h, int key){
 int hlHashCount(hlHash *h){
 	return h->objcount;
 }
-/*
-int main(int argc, char **argv){
-	int d1 = 10;
-	int d2 = 20;
-	int d3 = 30;
-	hlHash * h = hlNewHash(13);
-	hlHashAdd(h,1,&d1);
-	hlHashAdd(h,2,&d2);
-	hlHashAdd(h,3,&d3);
-	hlHashAdd(h,3,&d3);
-	printf("d1:%d\n",*(int*)(hlHashGet(h,1)));
-	printf("d2:%d\n",*(int*)(hlHashGet(h,2)));
-	hlHashRem(h,3);
-	printf("d3:%p\n",hlHashGet(h,3));
+
+/* --------- LIST ---------- */
+hlList *hlNewList(void){
+	hlList *list = (hlList*)malloc(sizeof(hlList));
+	list->size = 0;
+	list->first = NULL;
+	list->last = NULL;
+	return list;
+}
+static hlLNode * hl_new_list_node(void *data){
+	hlLNode *ln = (hlLNode*)malloc(sizeof(hlLNode));
+	ln->data = data;
+	ln->next = NULL;
+	return ln;
+}
+void hlListAppend(hlList *l, void *data){
+	hlLNode *ln = hl_new_list_node(data);
+	if(l->size == 0){
+		l->first = ln;
+		l->last = ln;
+		l->size = 1;
+	}else{
+		l->last->next = ln;
+		l->last = ln;
+		l->size ++;
+	}
+}
+void hlListPush(hlList *l, void *data){
+	hlLNode *ln = hl_new_list_node(data);
+	if(l->size == 0){
+		l->first = ln;
+		l->last = ln;
+		l->size = 1;
+	}else{
+		ln->next = l->first;
+		l->first = ln;
+		l->size++;
+	}
+}
+void *hlListPop(hlList *l){
+	void *data = NULL;
+	hlLNode *tmp = NULL;
+	if(l->size == 0){
+		return NULL;
+	}else if(l->size == 1){
+		data = l->first->data;
+		free(l->first);
+		l->first = NULL;
+		l->last = NULL;
+		l->size = 0;
+		return data;
+	}else{
+		data = l->first->data;
+		tmp = l->first->next;
+		free(l->first);
+		l->first = tmp;
+		l->size--;
+		return data;
+	}
+}
+int hlListRemData(hlList *l, void *data){
+	hlLNode *ln = l->first;
+	hlLNode *prev = NULL;
+	while(ln){
+		if(ln->data == data){
+			if(ln == l->first){
+				l->first = ln->next;
+			}
+			if(ln == l->last){
+				l->last = prev;
+			}
+			if(prev){
+				prev->next = ln->next;
+			}
+			l->size--;
+			free(ln);
+			return 1;
+		}
+		prev = ln;
+		ln = ln->next;
+	}
 	return 0;
-}*/
+}
+void	hlListRemAllData(hlList *l, void *data){
+	while(hlListRemData(l,data));
+}
+void *hlListGet(const hlList *l, int index){
+	hlLNode *ln = l->first;
+	if(index < 0 || index >= l->size){
+		fprintf(stderr,"ERROR: hlListGet(%p,%d): index out of range [0,%d[\n",
+			(void*)l,index,l->size);
+		return NULL;
+	}
+	while(index-- && ln){
+		ln = ln->next;
+	}
+	if(ln){
+		return ln->data;
+	}
+	return NULL;
+}
+void *hlListRem(hlList *l, int index){
+	hlLNode *ln = l->first;
+	hlLNode *prev = NULL;
+	void *data = NULL;
+	if(index < 0 || index >= l->size){
+		fprintf(stderr,"ERROR: hlListRem(%p,%d): index out of range [0,%d[\n",
+			(void*)l,index,l->size);
+		return NULL;
+	}
+	while(index-- && ln){
+		prev = ln;
+		ln = ln->next;
+	}
+	data = ln->data;
+	if(!prev){
+		l->first = ln->next;
+	}else{
+		prev->next = ln->next;
+	}
+	if(!ln->next){
+		l->last = prev;
+	}
+	l->size--;
+	free(ln);
+	return data;
+}

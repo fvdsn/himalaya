@@ -29,6 +29,7 @@ struct hl_frame{
 	hlColor color;		/*background color*/
 	hlTile* bg;		/*tile filled with background color*/
 	int depth; /* root node is depth 0 */
+	int tilecount;
 	struct hl_node *tlroot; /*(tx,ty) < 0*/
 	struct hl_node *trroot; /*(tx>=0, ty <0)*/
 	struct hl_node *brroot; /*(tx,ty) >=0*/
@@ -62,6 +63,7 @@ int hlFrameSizeY(hlFrame *f, int z);
 
 /*returns the count of mipmap levels */
 int hlFrameDepth(hlFrame *f);
+int hlFrameTileCount(hlFrame *f);
 
 /*returns the frame background color*/
 hlColor  hlFrameColor(hlFrame *f);
@@ -69,9 +71,10 @@ hlColor  hlFrameColor(hlFrame *f);
 /*returns the frame colorspace*/
 hlCS 	hlFrameCS(hlFrame *f);
 
-/*replaces the tile at coordinates x,y,z, 
+/*replaces the tile at coordinates x,y,z,
+ * return 1 if the set is successfull, 0 if it could not set the tile.
  * crashes if tile is NULL */
-void 	hlFrameTileSet(	hlFrame *f, 
+int 	hlFrameTileSet(	hlFrame *f, 
 			hlTile *t, 
 			int x, 
 			int y,

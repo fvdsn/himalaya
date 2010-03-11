@@ -48,13 +48,23 @@ int	hlBBoxTest(const hlBBox *box, int tx, int ty, int tz){
 	}
 }
 void	hlBBoxExtend(hlBBox *box1, const hlBBox *box2){
+	if(box1->tx == box1->btx || box1->ty == box1->bty){
+		memcpy(box1,box2,sizeof(struct hl_bbox));
+		return;
+	}
 	if(box2->tx <  box1->tx){  box1->tx  = box2->tx;}
 	if(box2->ty <  box1->ty){  box1->ty  = box2->ty;}
 	if(box2->btx > box1->btx){ box1->btx = box2->btx;}
 	if(box2->bty > box1->bty){ box1->bty = box2->bty;}
 	//printf("BBox : [ %d %d | %d %d ]\n",box1->tx,box1->ty,box1->btx,box1->bty);
 }
-
+int	hlBBoxArea(const hlBBox *box){
+	if(box->infinite){
+		return -1;
+	}else{
+		return (box->btx-box->tx)*(box->bty-box->ty);
+	}
+}
 /* 	hlOp_(...)	*/
 static hlOpRef hl_new_ref(void){
 	static hlOpRef ref = 0;
@@ -67,6 +77,8 @@ hlOp* hlNewOp(int id){
 	op->ref 	= hl_new_ref();
 	op->refcount 	= 0;
 	op->caching 	= 0;
+	op->depth	= 0;
+	op->max_depth	= 0;
 	op->cache 	= NULL;
 	assert(op_library[id].id == id);
 	op->render 	= op_library[id].render;
@@ -95,6 +107,8 @@ hlOp* hlNewOp(int id){
 	op->bbox.ty = 0;
 	op->bbox.btx = 0;
 	op->bbox.bty = 0;
+	op->skip = NULL;
+	op->open = 0;
 	
 	num_op++;
 	return op;
@@ -130,6 +144,7 @@ hlOp* hlDupOp(hlOp* op){
 	return dup;
 }
 void hlFreeOp(hlOp* op){
+	fprintf(stdout,"hlFreeOp(%p)\n",(void*)op);
 	if(op){
 		if(op->p_numc){
 			free(op->p_num);
@@ -185,12 +200,52 @@ void hlPrintOp(hlOp *op){
 	printf("</Op>\n");
 	return;
 }
+void hlGraphOp(FILE *f,const hlOp *op, int display){
+	if(!f){
+		fprintf(stderr,"FAILURE : cannot print operation graph on NULL file\n");
+		return;
+	}
+	if(!op){
+		fprintf(stderr,"WARNING : printing graph of NULL operation\n");
+		fprintf(f,"op_NULL [color = red];\n");
+		return;
+	}
+	switch(display){
+		case HL_GRAPH_FULL:
+			fprintf(f,"op_%p [ shape = record, label = \n",(void*)op);
+			fprintf(f,"\"Op: %p| opref: %d | refcount: %d | id : %d | type : %d | caching : %d | cache : %p \"];\n",
+					(void*)op, op->ref, op->refcount, op->id, op->type, op->caching, (void*)op->cache);
+			if(op->cache){
+				fprintf(f,"frame_%p [ shape = record, color = blue, label = \"Frame | tilecount : %d\"];\n",
+						(void*)op->cache,hlFrameTileCount(op->cache));
+				fprintf(f,"op_%p -> frame_%p\n [ color = blue ] ",(void*)op,(void*)op->cache);
+			}
+			if(op->skip){
+				fprintf(f,"op_%p -> op_%p [ color = red ];",(void*)op,(void*)op->skip);
+			}
+			return;
+		case HL_GRAPH_SIMPLE:
+			if(op->skip){
+				fprintf(f,"op_%p [ shape = record, color = red, label = \" ref: %d | id : %d | open : %d | area : %d | depth: %d | max_depth: %d\"];\n",
+						(void*)op, op->ref, op->id, op->open, hlBBoxArea(&(op->bbox)),op->depth,op->max_depth);
+				fprintf(f,"op_%p -> op_%p [ color = red ];",(void*)op,(void*)op->skip);
+			}else if (op->cache){
+				fprintf(f,"op_%p [ shape = record, color = blue, label = \" ref: %d | id : %d | tc : %d \"];\n",
+						(void*)op, op->ref, op->id, hlFrameTileCount(op->cache));
+			}else{
+				fprintf(f,"op_%p [ shape = record, label = \" ref: %d | id : %d \"];\n",
+						(void*)op, op->ref, op->id);
+			}
+			return;
+	}
+}
 
 /* 	hlOpCache___(...) 		*/
 void hlOpCacheEnable(hlOp *op, int enabled){
 	op->caching = enabled;
 }
 void hlOpCacheFree(hlOp*op){
+	fprintf(stdout,"hlOpCacheFree(%p)\n",(void*)op);
 	if(op->cache)
 		hlFreeFrame(op->cache);
 }
@@ -201,12 +256,11 @@ hlTile *hlOpCacheRemove(hlOp* op, int x, int y, int z){
 		return NULL;
 	}
 }
-void hlOpCacheSet(hlOp* op, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty, int tz){
+int hlOpCacheSet(hlOp* op, hlTile*tile, hlCS cs, int sx, int sy, int tx, int ty, int tz){
 	if(!op->cache){
 		op->cache = hlNewFrame(	hlNewColor(cs,0,0,0,0,0),sx,sy);
 	}
-	hlFrameTileSet(op->cache,tile,tx,ty,tz);
-	return;
+	return hlFrameTileSet(op->cache,tile,tx,ty,tz);
 }
 hlTile *hlOpCacheGet(hlOp* op, int tx, int ty, int tz){
 	if(op->cache){
@@ -492,3 +546,4 @@ void hlOpClassAddImage( hlOpClass *c,
 void hlOpClassAddBBoxFun(hlOpClass *c, void (*bbox_fun)(const hlOp *op, hlBBox *box)){
 	c->bbox_fun = bbox_fun;
 }
+

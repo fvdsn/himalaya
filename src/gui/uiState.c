@@ -39,14 +39,16 @@ void uiStateProcess(){
 	while(i--){
 		if ( key_state[i] == UI_KEY_DOWN && key_state_p[i] == UI_KEY_UP){
 			key_state_h[i] = UI_KEY_PRESS;
-			printf("Key '%d' PRESS\n",i);
+			//TODO FIXME
+			//printf("Key '%d' PRESS\n",i);
 		}else if ( key_state[i] == UI_KEY_UP && key_state_p[i] == UI_KEY_DOWN){
 			key_state_h[i] = UI_KEY_RELEASE;
-			printf("Key '%d' RELEASE\n",i);
+			//TODO FIXME
+			//printf("Key '%d' RELEASE\n",i);
 		}else{
 			if(key_state_h[i] != UI_KEY_HOLD){
 				key_state_h[i] = UI_KEY_HOLD;
-				printf("Key '%d' HOLD\n",i);
+				//printf("Key '%d' HOLD\n",i);
 			}
 		}
 		key_state_p[i] = key_state[i];

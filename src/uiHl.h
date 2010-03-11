@@ -3,7 +3,7 @@
 #include "gui/uiCore.h"
 #include "hl/hlImg.h"
 
-#define MAX_UNDO_LEVEL 1024
+#define MAX_UNDO_LEVEL 8
 
 typedef struct ui_hl_data{
 	hlImg *img;
@@ -15,7 +15,7 @@ typedef struct ui_hl_data{
 	int zoomlevel;
 	int sx;		/* the size of the viewport */
 	int sy;
-	int dx;		/* position of the image inside the viewport */
+	int dx;		/* position of the the viewport on the image*/
 	int dy;
 
 	/*painting*/
@@ -24,19 +24,21 @@ typedef struct ui_hl_data{
 	float lpx;	/*position of last brush drawn in hl coordinates*/
 	float lpy;
 
-	hlState history[MAX_UNDO_LEVEL];
+	hlList *hist;
 	int hist_cur_index;
-	int hist_last_index;
+	int hist_max_size;
 }uiHlData;
 
 uiEntity *uiHlNew(const char *name,hlImg *img, hlState s, int sx, int sy);
 void	uiHlSetImg(uiEntity *hl, hlImg *img, hlState s);
 void	uiHlSetState(uiEntity *hl, hlState s);
-void	uiHlRender(uiEntity *hl);
-void	uiHlSetZoomLevel(uiEntity *hl, int zoomlevel);
+void uiHlZoomUp(uiEntity *hl);
+void uiHlZoomDown(uiEntity *hl);
 void uiHlBaseState(uiEntity *hl);
 void uiHlPushState(uiEntity *hl);
 void uiHlUndo(uiEntity *hl);
 void uiHlRedo(uiEntity *hl);
+void uiHlLog(const char *logfilepath);
+void uiHlReplayLog(const char *logfilepath, uiEntity *hl);
 #endif
 

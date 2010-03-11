@@ -41,7 +41,7 @@ void uiStringDraw(uiString *s, float x, float y, float z, float sizex, float siz
 		uptodate = 0;
 	}
 	if(!uptodate || sx > s->sx || sy > s->sy || !s->buffer){
-		printf("rendering buffer\n");
+		//printf("rendering buffer\n");
 		free(s->buffer);
 		s->buffer = malloc(sx*sy*4);
 		memset(s->buffer,0,sx*sy*4);

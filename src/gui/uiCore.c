@@ -51,7 +51,7 @@ static void uiKeyDown(SDL_Event *event){
 		default:
 			uiStateSetKey(key,UI_KEY_DOWN);
 	}
-	printf("Key '%d' DOWN\n",key);
+	//printf("Key '%d' DOWN\n",key);
 }
 static void uiKeyUp(SDL_Event *event){
 	int key = event->key.keysym.sym;
@@ -66,7 +66,7 @@ static void uiKeyUp(SDL_Event *event){
 		default:
 			uiStateSetKey(key,UI_KEY_UP);
 	}
-	printf("Key '%d' UP\n",key);
+	//printf("Key '%d' UP\n",key);
 }
 static void uiResize(int x, int y){
 	window_size_x = x;

@@ -47,10 +47,12 @@ hlFrame* hlNewFrame(hlColor bgcol, int sx, int sy){
 					f->region.pty,
 					f->region.tx,
 					f->region.ty	); 
+	fprintf(stdout,"NEW FRAME : sx:%d sy:%d depth:%d \n",sx,sy,f->depth); 
 	hlColorCopy(&f->color,&bgcol);
 	f->cs = hlColorGetCS(&bgcol);
 	f->bg = hlNewTile(hlColorGetCS(&bgcol));
 	hlTileFill(f->bg,&bgcol);
+	f->tilecount = 0;
 	num_frame++;
 	return f;
 }
@@ -78,8 +80,10 @@ void hlFramePurge(hlFrame *f){
 	f->trroot = hl_new_node(0,0);
 	f->brroot = hl_new_node(0,0);
 	f->blroot = hl_new_node(0,0);
+	f->tilecount = 0;
 }
 void hlFreeFrame(hlFrame *f){
+	fprintf(stdout,"hlFreeFrame(%p)\n",(void*)f);
 	if(f){
 		hl_free_node_tree(f->tlroot);
 		hl_free_node_tree(f->trroot);
@@ -111,6 +115,9 @@ int hlFrameTileY(hlFrame *f, int z){
 int hlFrameDepth(hlFrame *f){
 	return f->depth;
 }
+int hlFrameTileCount(hlFrame *f){
+	return f->tilecount;
+}
 hlCS hlFrameCS(hlFrame *f){
 	return f->cs;
 }
@@ -119,50 +126,6 @@ hlColor hlFrameColor(hlFrame *f){
 }
 
 /* 	hlFrameTileGet/Read/Copy(...) 	*/
-static int depth_from_tile(int x, int y, int z){
-	/* given a x,y,z tile coordinates, returns the minimum quadtree
-	 * depth so that it can store the tile */
-	int tmp = z;
-	int depth = 0;
-	if(x < 0){x = -x-1;}
-	if(y < 0){y = -y-1;}
-	if(y > x){x = y;}
-	while(tmp--){
-		x = x * 2 + 1;
-	}/*now we have the x = the greatest coordinate of a tile at z == 0*/
-	while(x){
-		x = x/2;
-		depth++;
-	}
-	return depth;
-}
-static hlNode *hl_node_add_level(hlNode*n,int i){
-	/*given the root node of a tree, adds i level on top of
-	 * that root node, and returns the new root*/
-	hlNode*new;
-	if (i==0){
-		return n;
-	}else{
-		new = hl_new_node(0,0);
-		new->tl = hl_node_add_level(n,i-1);
-		return new;
-	}
-}		
-static void hl_frame_grow(hlFrame *f, int x, int y, int z){
-	/*grows the frame depth so that it can store a tile
-	 * at given coordinates 
-	 * TODO : don't grow the octree if it's empty */
-	int newdepth = depth_from_tile(x,y,z);
-	if(newdepth <= f->depth){
-		return;
-	}else{
-		f->depth = newdepth;
-		f->tlroot = hl_node_add_level(f->tlroot, newdepth - f->depth);
-		f->trroot = hl_node_add_level(f->trroot, newdepth - f->depth);
-		f->brroot = hl_node_add_level(f->brroot, newdepth - f->depth);
-		f->blroot = hl_node_add_level(f->blroot, newdepth - f->depth);
-	}
-}
 static hlNode* hl_tile_match(hlNode* n, unsigned int x, unsigned int y){
 	/* returns the child node of n matching the coordinates x,y. returns null if
 	 * nothing matches
@@ -185,8 +148,8 @@ static int hl_tile_path(unsigned int *pathx, unsigned int *pathy, int tx, int ty
 	 * the coordinates for the path reflect the inner representation of
 	 * each octree. If you find a cleaner solution, I'm all for it
 	 * it returns 1 if the tile could'nt possibly be in the quadtree*/
-	if(tx < 0){ tx = -tx-1;}; 
-	if(ty < 0){ ty = -ty-1;};
+	if(tx < 0){ tx = -tx-1; }; 
+	if(ty < 0){ ty = -ty-1; };
 	if(z > depth || z >= HL_MAX_TILE_LEVEL){ i = 0;}
 	if(i <= 0){
 		if(tx || ty){
@@ -236,10 +199,14 @@ hlTile* hlFrameTileGet(hlFrame *f, int x, int y,int z){
 }
 hlTile* hlFrameTileRead(hlFrame* f, int x, int y, int z){
 	hlTile* t = hlFrameTileGet(f,x,y,z);
-	if(t)
+	if(t){
 		return t;
-	else
+	}else{
+		if(!f->bg){
+			fprintf(stderr,"ERROR: No background tile in frame\n");
+		}
 		return f->bg;
+	}
 }
 hlTile* hlFrameTileCopy(hlFrame* f, int x, int y, int z){
 	return hlTileDup(hlFrameTileRead(f,x,y,z),hlFrameCS(f));
@@ -306,7 +273,7 @@ static hlNode *hl_frame_get_root(hlFrame *f, int x, int y){
 		else{	 return f->tlroot;}
 	}
 }
-void hlFrameTileSet(hlFrame *f, hlTile * tile,int x, int y, int z){
+int hlFrameTileSet(hlFrame *f, hlTile * tile,int x, int y, int z){
 	hlNode *n = hl_frame_get_root(f,x,y);
 	unsigned int pathx[HL_MAX_TILE_LEVEL];
 	unsigned int pathy[HL_MAX_TILE_LEVEL];
@@ -314,17 +281,24 @@ void hlFrameTileSet(hlFrame *f, hlTile * tile,int x, int y, int z){
 	int i = level;
 	int j = 0;
 	if(hl_tile_path(pathx,pathy,x,y,z,f->depth)){
-		hl_frame_grow(f,x,y,z);		return;
+		//hl_frame_grow(f,x,y,z);		return;
+		//TODO prevent leak
+		//fprintf(stderr,"WARNING: tile leak : x:%d y:%d z:%d\n",x,y,z);
+		return 0;
 	}
 	while(i--){
 		j++;
 		n = hl_tile_match_set(n,pathx[j-1],pathy[j-1],
 					pathx[j],pathy[j]);
 	}
-	if (n->tile)
+	if (n->tile){
 		hlFreeTile(n->tile);
-	n->tile = tile;
-	return;
+		n->tile = tile;
+	}else{
+		n->tile = tile;
+		f->tilecount++;
+	}
+	return 1;
 }
 
 /* 	hlFrameTileRemove(...) 	*/
@@ -375,6 +349,7 @@ hlTile * hlFrameTileRemove(hlFrame *f, int x, int y, int z){
 	assert(n->tile);
 	t = n->tile;
 	n->tile = NULL;
+	f->tilecount--;
 	/* if the node where we removed the tile doesn't have any more tiles,
 	 * we free it. And that all the way to root */
 	do{
@@ -390,6 +365,7 @@ hlTile * hlFrameTileRemove(hlFrame *f, int x, int y, int z){
 }
 void hlFrameTileFree(hlFrame *f, int x, int y, int z){
 	hlTile *t = hlFrameTileRemove(f,x,y,z);
+	fprintf(stdout,"hlFrameTileFree(%p,%d,%d,%d)\n",(void*)f,x,y,z);
 	if (t){
 		hlFreeTile(t);
 	}
@@ -417,17 +393,17 @@ static hlTile *hl_white_rgba_tile(){
 	hlTile *t = hlNewTile(cs);
 	hlTileFill(t,&c);
 	return t;
-}*/
-static void hlTileToRaw(hlTile *t, hlRaw *raw, int px, int py){
+}
+* static void hlTileToRaw(hlTile *t, hlRaw *raw, int px, int py){
 	const int sx = hlRawSizeX(raw);
 	const int sy = hlRawSizeY(raw);
 	const int bpp = hlCSGetBpp(hlRawCS(raw));
 	uint8_t * tiledata = HL_DATA_8B(t);
-	int ptx = 0;	/* top left point on tile */
+	int ptx = 0;	* top left point on tile *
 	int pty = 0;
-	int prx = px;	/* top left point on raw */
+	int prx = px;	* top left point on raw *
 	int pry = py;
-	int psx = HL_TILEWIDTH;	/* size of copy region */
+	int psx = HL_TILEWIDTH;	* size of copy region *
 	int psy = HL_TILEWIDTH;
 	int y;
 	if(px <= -HL_TILEWIDTH || py <= -HL_TILEWIDTH || px >= sx || py >=sy ||sx <= 0 || sy <=0){
@@ -463,8 +439,8 @@ static void hlTileToRaw(hlTile *t, hlRaw *raw, int px, int py){
 
 void hlRegionToRaw(hlFrame *f,hlRaw *raw,int px, int py,int z){
 	hlRegion r = hlNewRegion(px,py,hlRawSizeX(raw),hlRawSizeY(raw),z);
-	int x,y;	/*tile index*/
-	int rx,ry;	/*top left pixel in raw where current tile will be copied */
+	int x,y;	*tile index*
+	int rx,ry;	*top left pixel in raw where current tile will be copied *
 	x = r.tx;	
 	while(x--){
 		y = r.ty;
@@ -478,7 +454,7 @@ void hlRegionToRaw(hlFrame *f,hlRaw *raw,int px, int py,int z){
 		}
 	}
 }
-/*
+*
 static void hlRegionToRaw2(hlFrame *f,hlRaw *raw,int px, int py,unsigned int z){
 	hlRegion r = hlNewRegion(px,py,hlRawSizeX(raw),hlRawSizeY(raw),z);
 	const int bpp = hlCSGetBpp(hlFrameCS(f));
@@ -547,7 +523,7 @@ static void hlRegionToRaw2(hlFrame *f,hlRaw *raw,int px, int py,unsigned int z){
 		}
 	}
 }
-*/
+*
 hlRaw *hlRawFromRegion(hlFrame *f, hlRegion r){
 	hlRaw *raw = hlNewRaw(hlFrameCS(f),r.sx,r.sy);
 	hlRegionToRaw(f,raw,r.px,r.py,r.z);
@@ -556,7 +532,7 @@ hlRaw *hlRawFromRegion(hlFrame *f, hlRegion r){
 hlRaw * hlRawFromFrame(hlFrame *f,int z){
 	hlRegion r = hlNewRegion(0,0,hlFrameSizeX(f,z),hlFrameSizeY(f,z),z);
 	return hlRawFromRegion(f,r);
-}
+}*/
 	
 /* 	hlFrameFromRaw(...) 	*/
 static hlTile *hlTileFromRaw(hlRaw *r,hlColor *bg,int tx, int ty){
@@ -615,37 +591,37 @@ static void hl_tile_mipmap(hlCS cs, hlTile* dst, const hlTile *src, int top, int
 		}
 	}
 }
-static void hl_node_source_mipmap(hlNode* n,hlCS cs){
+static void hl_node_source_mipmap(hlFrame *f,hlNode* n,hlCS cs){
 	if(!n->tile){
 		n->tile = hlNewTile(cs);
-
+		f->tilecount++;
 		if(n->tl){
 			if(!n->tl->tile)
-				hl_node_source_mipmap(n->tl,cs);
+				hl_node_source_mipmap(f,n->tl,cs);
 			hl_tile_mipmap(cs,n->tile,n->tl->tile,1,1);
 		}
 		if(n->tr){
 			if(!n->tr->tile)
-				hl_node_source_mipmap(n->tr,cs);
+				hl_node_source_mipmap(f,n->tr,cs);
 			hl_tile_mipmap(cs,n->tile,n->tr->tile,1,0);
 		}
 		if(n->br){
 			if(!n->br->tile)
-				hl_node_source_mipmap(n->br,cs);
+				hl_node_source_mipmap(f,n->br,cs);
 			hl_tile_mipmap(cs,n->tile,n->br->tile,0,0);
 		}
 		if(n->bl){
 			if(!n->bl->tile)
-				hl_node_source_mipmap(n->bl,cs);
+				hl_node_source_mipmap(f,n->bl,cs);
 			hl_tile_mipmap(cs,n->tile,n->bl->tile,0,1);
 		}
 	}
 }
 void 	hlFrameMipMap(hlFrame *f){
-	hl_node_source_mipmap(f->tlroot,hlFrameCS(f));
-	hl_node_source_mipmap(f->trroot,hlFrameCS(f));
-	hl_node_source_mipmap(f->brroot,hlFrameCS(f));
-	hl_node_source_mipmap(f->blroot,hlFrameCS(f));
+	hl_node_source_mipmap(f,f->tlroot,hlFrameCS(f));
+	hl_node_source_mipmap(f,f->trroot,hlFrameCS(f));
+	hl_node_source_mipmap(f,f->brroot,hlFrameCS(f));
+	hl_node_source_mipmap(f,f->blroot,hlFrameCS(f));
 }
 void hlPrintFrame(hlFrame *f){
 	printf("<frame>\n");
@@ -660,16 +636,3 @@ void hlPrintFrame(hlFrame *f){
 	return;
 
 }
-/*int main(int argc, char** argv){
-	hlCS cs = hlNewCS(HL_8B,HL_RGB);
-	hlRaw *in  = hlRawFromPng("blending.png");
-	hlRegion r = hlNewRegion(-16,-16,47,47,0);
-	hlRaw *out = NULL;
-	hlFrame *f = hlFrameFromRaw(in);
-	hlPrintFrame(f);
-	hlPrintRegion(r);
-	hlFrameMipMap(f);
-	out = hlRawFromFrame(f,0);
-	hlRawToPng(out,"f-out.png");
-	return 1;
-}*/

@@ -29,5 +29,27 @@ void *hlHashGet(hlHash *h, int key);
  * objects of course */
 void *hlHashRem(hlHash *h, int key);
 int hlHashCount(hlHash *h);
+
+typedef struct hl_list_node{
+	struct hl_list_node *next;
+	void *data;
+}hlLNode;
+
+typedef struct hl_list{
+	int size;
+	hlLNode *first;
+	hlLNode *last;
+}hlList;
+
+hlList *hlNewList(void);
+void	hlListAppend(hlList *l, void *data);
+void	hlListPush(hlList *l, void *data);
+void *	hlListPop(hlList *l);
+int	hlListRemData(hlList *l, void *data);
+void	hlListRemAllData(hlList *l, void *data);
+void *  hlListGet(const hlList *l, int index);
+void *  hlListRem(hlList *l, int index);
+
+
 #endif
 

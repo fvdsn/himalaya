@@ -13,8 +13,8 @@
 struct hl_img{
 	struct hl_op* top; 	/* last operation */
 	hlState state;	/* unsaved, or the saved state id */
-	hlRegion region;	
 	hlHash * statelib; 	/* to quickly find state top op */
+	hlList * statelist;	/* list of valid states */
 	hlFrame * source; 	/* original image data*/
 };
 void hlInit(void);
@@ -37,33 +37,11 @@ hlImg* hlNewImg(hlColor c, int sx, int sy);
  * 		You should not modify the source once you have set it.
  */
 hlImg* hlNewImgFromSource(hlFrame *frame);
-hlImg* hlNewImgFromRaw(hlRaw *raw);		/*TODO*/
-hlImg* hlNewImgFromImg(hlImg *img, hlState s);	/*TODO*/
 /**
  * Frees all resources used by the img.
  * @param img : the img that will be freed.
  */
 void   hlFreeImg(hlImg* img);
-void   hlLinkImg(hlImg* img);		/*TODO*/
-void   hlUnlinkImg(hlImg* img);		/*TODO*/
-void   hlLockImg(hlImg* img);		/*TODO*/
-void   hlUnlockImg(hlImg *img);		/*TODO*/
-
-/*------------- REGION -------------*/
-
-/**
- * Changes the region to be rendered, the region can be bigger than the image. 
- * pixels outside will be rendered as transparent black 
- * @param img 	: the image with the new render region
- * @param r 	: the new render region.
- */
-void 	 hlImgSetRegion(hlImg *img, hlRegion r);
-/**
- * Returns the current render region of the image.
- * @param img 	: the image.
- * @return 	: the current region of img.
- */
-hlRegion hlImgGetRegion(hlImg *img);
 
 /*------------- OPERATION -------------*/
 
@@ -113,6 +91,25 @@ void	hlImgModOpEnd(hlImg *img, hlOpRef ref);
  */
 void 	hlImgModOpHint(hlImg *img, hlOpRef ref);
 
+/*------------- BBOX OPERATIONS ---*/
+
+/** Adds an Open BBox to the operation stack. 
+ *  Any operation pushed onto an open bbox will be put inside the box :
+ *  The bbox will be modified so that its bounds fit the object.
+ *  - Open BBox are always : on top of the oplist, in unsaved state
+ *  @param img : the image
+ *  @return : A reference to the BBox operation
+ */
+hlOpRef hlImgPushOpenBBox(hlImg *img,int max_depth);
+/** Close the deepest open bounding box.
+ * @parm img : the image
+ */
+void  hlImgCloseBBox(hlImg *img);
+/** Close all open BBox.
+ * @param img : the image
+ */
+void hlImgCloseAllBBox(hlImg *img);
+
 /*------------- STATE -------------*/
 
 #define HL_STATE_CURRENT 0 
@@ -156,6 +153,7 @@ hlState hlImgStateRem(hlImg *img, hlState s);
  * @param s	: the state that will be printed.
  */
 void 	 hlPrintImg(hlImg *img, hlState s);
+void	 hlGraphImg(FILE *f, const hlImg *img,int display);
 /**
  * Returns the width in pixel of the current render region at zoom level z.
  * @param img 	: the image.
@@ -211,37 +209,10 @@ hlTile * hlImgTileCopy( hlImg *img,
 			int tx,
 			int ty,
 			int tz	);
-/* makes sure the selected tile is rendered and up to date */
-void hlImgRenderTile(	hlImg *img,
-			hlState s,
-			int tx,
-			int ty,
-			int tz	);
-/*renders all the tiles in the region */
-void hlImgRenderRegion(hlImg *img, hlRegion r, hlState s);
-/* returns a frame for reading purpose valid until next modification
- * of image */
-hlFrame *hlImgReadFrame(hlImg *img, hlState s);
 /* returns a raw rendering of the image in region and state */
-hlRaw 	*hlImgRenderNewRaw(hlImg *img, hlRegion r, hlState s);
-void hlImgRenderToRaw(hlImg *img, hlRaw*raw, hlState state, int px, int py, int z);
-void hlImgRenderRegionToRaw(hlImg *img, hlRegion r, hlState s, hlRaw *raw); /*TODO*/
+hlRaw 	*hlImgRenderNewRaw(hlImg *img, hlState s, hlRegion r);
+void hlImgRender(hlImg *img, hlState s, hlRaw*raw, int px, int py, int z);
 
-
-/* renders the tile in the designed op and below. if an operation
- * has caching enabled, a copy of the result is put into the tile.
- * if an operation has caching disabled and the corresponding tile
- * is found in cache, it is returned and removed from the cache,
- * 
- * the function always returns a modifable tile containing the render,
- * unless it is called on a top operation, then it returns a tile
- * that _should not_ be modified.
- *
- * this function is called by image render API on the top operation, 
- * then it calls itself recursively, it represents the core rendering
- * algorithm. 
- * */
-//hlTile *hlOpRenderTile(hlOp* op, bool istop, int tx, int ty, int tz);
 
 /** Renders a tile.
  * @param op : the operation that must be rendered.
@@ -250,7 +221,9 @@ void hlImgRenderRegionToRaw(hlImg *img, hlRegion r, hlState s, hlRaw *raw); /*TO
  *  in cache. 
  * @param x,y,z : coordinates of the tile. z must be >= 0.
  */
-hlTile *hlOpRenderTile(hlOp*op, int cache, int x, int y, int z);
+hlTile *hlOpRenderTile(hlOp*op, int cache, int readonly, int sampling, int x, int y, int z);
+
+
 
 #endif
 
