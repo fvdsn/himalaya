@@ -19,6 +19,8 @@ float hlColorGetChan(const hlColor* color, int channel);
 hlCS  hlColorGetCS(const hlColor* color);
 uint8_t *hlColorGetData(hlColor *color);
 void  hlColorCopy(hlColor* dst, const hlColor *src);
+void  hlRgbToHsl(float *rgb, float *hsl);
+void  hlHslToRgb(float *hsl,float*rgb);
 void  hlPrintColor(const hlColor *color);
 #endif
 

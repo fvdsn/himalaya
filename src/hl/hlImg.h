@@ -212,6 +212,7 @@ hlTile * hlImgTileCopy( hlImg *img,
 /* returns a raw rendering of the image in region and state */
 hlRaw 	*hlImgRenderNewRaw(hlImg *img, hlState s, hlRegion r);
 void hlImgRender(hlImg *img, hlState s, hlRaw*raw, int px, int py, int z);
+void hlImgColorPick(hlImg *img, hlState s, int px, int py, int z, hlColor *color);
 
 
 /** Renders a tile.

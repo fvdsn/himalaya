@@ -413,14 +413,28 @@ uiEntity *uiEntityGetActive(){
 }
 void uiEventMouseButton(int button, int down, float x, float y, float pressure){
 	uiEntity *ent = uiEntityPick(x,y);
-	printf("click...\n");
+	//printf("click...\n");
 	while(ent){
-		printf("ent: %s\n",ent->name);
+		//printf("ent: %s\n",ent->name);
 		if(ent->click){
 			if(!ent->click(ent,button,down,
 					x - uiEntityGetPosX(ent),
 					y - uiEntityGetPosY(ent),
 					pressure)){
+				return;
+			}
+		}
+		ent = ent->parent;
+	}
+}
+void uiEventKeyPress(int key, int down){
+	float x,y;
+	uiEntity *ent = NULL;
+	uiStateMousePos(&x,&y,NULL);
+	ent = uiEntityPick(x,y);
+	while(ent){
+		if(ent->key_press){
+			if(!ent->key_press(ent,key,down)){
 				return;
 			}
 		}

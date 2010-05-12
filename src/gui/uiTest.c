@@ -79,23 +79,23 @@ int main(int argc, char **argv){
 	uiEntitySetPos(e,80,10);
 	uiEntityAdd(e,p);
 	
-	e = uiSliderNew("Exp",3,0.05,2000,0.025,2.0,NULL,NULL);
+	e = uiSliderNew("Exp",3,0.05,2000,0.025,2.0,0.5,NULL,NULL);
 	uiEntitySetPos(e,10,10);
 	uiEntityAdd(e,p);
 
-	e = uiSliderNew("Alpha",3,0,1,0.025,0.0,color+3,NULL);
+	e = uiSliderNew("Alpha",3,0,1,0.025,0.0,color[3],color+3,NULL);
 	uiEntitySetPos(e,10,34);
 	uiEntityAdd(e,p);
 	
-	e = uiSliderNew("Blue",2,0,1,0.025,0.0,color+2,NULL);
+	e = uiSliderNew("Blue",2,0,1,0.025,0.0,color[2],color+2,NULL);
 	uiEntitySetPos(e,10,54);
 	uiEntityAdd(e,p);
 
-	e = uiSliderNew("Green",1,0,1,0.025,0.0,color+1,NULL);
+	e = uiSliderNew("Green",1,0,1,0.025,0.0,color[1],color+1,NULL);
 	uiEntitySetPos(e,10,74);
 	uiEntityAdd(e,p);
 
-	e = uiSliderNew("Red",2,0,1,0.025,0.0,color,NULL);
+	e = uiSliderNew("Red",2,0,1,0.025,0.0,color[0],color,NULL);
 	uiEntitySetPos(e,10,94);
 	uiEntityAdd(e,p);
 

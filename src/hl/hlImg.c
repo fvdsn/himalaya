@@ -224,7 +224,7 @@ hlOpRef hlImgPushOp(hlImg *img, hlOp* op){
 	hlOp *up = NULL;
 	hlOpSetBBox(op);
 	hlOpSetCSIn(op,hlFrameCS(img->source));
-	fprintf(stdout,"pushop\n");
+	//fprintf(stdout,"pushop\n");
 	while(tmp && tmp->type == HL_BBOX && tmp->open && (tmp->max_depth > op->max_depth)){
 		if(op->type != HL_BBOX){
 			hlBBoxExtend(&(tmp->bbox),&(op->bbox));
@@ -728,6 +728,15 @@ hlTile *hlImgTileRead(hlImg *img, hlState state, int tx, int ty, int tz){
 }
 hlTile *hlImgTileCopy(hlImg *img, hlState state, int x, int y, int z){
 	return hlTileDup(hlImgTileRead(img,state,x,y,z),hlImgCS(img));
+}
+void hlImgColorPick(hlImg *img, hlState s, int px, int py, int z, hlColor *color){
+	int tx = hlTileCoordFromCoord(px);
+	int ty = hlTileCoordFromCoord(py);
+	int rx = px - tx*HL_TILEWIDTH;
+	int ry = py - ty*HL_TILEWIDTH;
+	fprintf(stdout,"px,py:[%d,%d],tx,ty[%d,%d],rx,ry:[%d,%d],z:%d\n",px,py,tx,ty,rx,ry,z);
+	hlTile *t = hlImgTileRead(img,s,tx,ty,z);
+	hlTileColorPick(t,hlImgCS(img),rx,ry,color);
 }
 
 /*	hlImgToRaw(...) / hlImgToNewRaw(...) */

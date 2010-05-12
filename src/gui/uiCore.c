@@ -50,7 +50,9 @@ static void uiKeyDown(SDL_Event *event){
 		case ' ': uiStateSetMod(UI_SPACE,UI_KEY_DOWN);
 		default:
 			uiStateSetKey(key,UI_KEY_DOWN);
+			uiEventKeyPress(key,UI_KEY_DOWN);
 	}
+
 	//printf("Key '%d' DOWN\n",key);
 }
 static void uiKeyUp(SDL_Event *event){
@@ -65,6 +67,7 @@ static void uiKeyUp(SDL_Event *event){
 		case ' ': uiStateSetMod(UI_SPACE,UI_KEY_UP);
 		default:
 			uiStateSetKey(key,UI_KEY_UP);
+			uiEventKeyPress(key,UI_KEY_UP);
 	}
 	//printf("Key '%d' UP\n",key);
 }

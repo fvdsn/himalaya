@@ -9,6 +9,9 @@ static int hl_txy_from_sxy(int sx){
 	else
 		return (sx+1)/HL_TILEWIDTH - 1;
 }
+int hlTileCoordFromCoord(int x){
+	return hl_txy_from_sxy(x);
+}
 hlRegion hlNewRegion(int px, int py, int sx, int sy, int z){
 	hlRegion r;
 	if (sx <= 0){sx = 1;}

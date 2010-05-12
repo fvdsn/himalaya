@@ -43,7 +43,7 @@ static void uiButtonDraw(uiEntity *self){
 }
 static int uiButtonClick(uiEntity *self,int button, int down, float x, float y, float pressure){
 	uiButtonData *bd = (uiButtonData*)self->data;
-	printf("click!:%s\tbutton:%d\tdown:%d\n",self->name,button,down);
+	//printf("click!:%s\tbutton:%d\tdown:%d\n",self->name,button,down);
 	if(bd->click && button == 0 && down == UI_KEY_UP){
 		bd->click(self,bd->id);
 	}
@@ -98,12 +98,32 @@ uiEntity *uiPanelNew(const char *name){
 	p->motion = uiPanelMotion;
 	return p;
 }
+void	 uiSliderSetValue(uiEntity *slider, float value){
+	uiSliderData *sd = (uiSliderData*)slider->data;
+	if(value >= sd->max_value){
+		value = sd->max_value;
+	}else if(value < sd->min_value){
+		value = sd->min_value;
+	}
+	sd->value = value;
+	if(sd->slide){
+		sd->slide(slider,sd->value,sd->id);
+	}else if(sd->dest_value){
+		*(sd->dest_value) = sd->value;
+	}
+}
 static int uiSliderMotion(uiEntity *self,float x, float y, float p){
-	float dx,v;
+	float dx,v,us;
 	uiSliderData *sd = (uiSliderData*)self->data;
+	us = sd->update_speed;
+	if(uiStateMod(UI_SHIFT) == UI_KEY_DOWN){
+		us *= 0.1;
+	}else if(uiStateMod(UI_ALT) == UI_KEY_DOWN){
+		us *= 10;
+	}
 	if(uiStateMouse(UI_MOUSE_BUTTON_1)){
 		uiStateMouseDelta(&dx,NULL,NULL);
-		v = sd->value + dx*sd->update_speed;
+		v = sd->value + dx*us;
 		if(v >= sd->max_value){
 			sd->value = sd->max_value;
 		}else if (v < sd->min_value){
@@ -113,7 +133,7 @@ static int uiSliderMotion(uiEntity *self,float x, float y, float p){
 		}
 		if(dx != 0.0){
 			if (sd->slide){
-				sd->slide(self,v,sd->id);
+				sd->slide(self,sd->value,sd->id);
 			}else if(sd->dest_value){
 				*(sd->dest_value) = sd->value;
 			}
@@ -122,11 +142,17 @@ static int uiSliderMotion(uiEntity *self,float x, float y, float p){
 	return 0;
 }
 static int uiSliderExpMotion(uiEntity *self,float x, float y, float p){
-	float dx,v, ev;
+	float dx,v, ev,us;
 	uiSliderData *sd = (uiSliderData*)self->data;
+	us = sd->update_speed;
+	if(uiStateMod(UI_SHIFT) == UI_KEY_DOWN){
+		us *= 0.1;
+	}else if(uiStateMod(UI_ALT) == UI_KEY_DOWN){
+		us *= 10;
+	}
 	if(uiStateMouse(UI_MOUSE_BUTTON_1)){
 		uiStateMouseDelta(&dx,NULL,NULL);
-		v = sd->value + dx*sd->update_speed;
+		v = sd->value + dx*us;
 		ev = powf(sd->base,v);
 		if(ev > sd->max_value){
 			sd->value = logf(sd->max_value)/logf(sd->base);
@@ -145,7 +171,7 @@ static int uiSliderExpMotion(uiEntity *self,float x, float y, float p){
 				v,ev);
 		if(dx != 0.0){
 			if (sd->slide){
-				sd->slide(self,ev,sd->id);
+				sd->slide(self,sd->exp_value,sd->id);
 			}else if(sd->dest_value){
 				*(sd->dest_value) = sd->exp_value;
 			}
@@ -201,6 +227,7 @@ uiEntity *uiSliderNew(const char *name,
 		float max_value,
 		float update_speed,
 		float base,
+		float start_value,
 		float *dest_value,
 		void(*slide)(uiEntity *self, float value, int id)){
 	uiSliderData *sd = (uiSliderData*)malloc(sizeof(uiSliderData));
@@ -214,14 +241,17 @@ uiEntity *uiSliderNew(const char *name,
 	sd->dest_value = dest_value;
 	b->data = sd;
 	b->draw = uiSliderDraw;
+	b->string = uiStringNew(name,10,UI_BUTTON_WIDTH,UI_BUTTON_HEIGHT,5,11);
 	if(base == 0.0f || base == 1.0f){
 		b->motion = uiSliderMotion;
 		sd->base = 0.0f;
 		sd->exp_value = 0.0f;
 		if(dest_value){
-			sd->value = *dest_value;
-		}else{
-			sd->value = ( max_value + min_value ) / 2.0;
+			*dest_value = start_value;
+		}
+		sd->value = start_value;
+		if(sd->slide){
+			sd->slide(b,sd->value,sd->id);
 		}
 	}else{
 		b->motion = uiSliderExpMotion;
@@ -229,11 +259,13 @@ uiEntity *uiSliderNew(const char *name,
 		if(dest_value){
 			sd->exp_value = *dest_value;
 		}else{
-			sd->exp_value = (max_value + min_value) / 2.0;
+			sd->exp_value = start_value;
 		}
 		sd->value = logf(sd->exp_value)/logf(sd->base);
+		if(sd->slide){
+			sd->slide(b,sd->exp_value,sd->id);
+		}
 	}
-	b->string = uiStringNew(name,10,UI_BUTTON_WIDTH,UI_BUTTON_HEIGHT,5,11);
 	return b;
 }
 static void uiDisplayFloatDraw(uiEntity *self){

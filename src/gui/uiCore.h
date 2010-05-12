@@ -87,6 +87,7 @@ struct uiEntity_s{
 	int (*event)(uiEntity *self, uiEvent *event);	/*called when receiving an event */
 	int (*click)(uiEntity *self, int button, int down, float x, float y, float pressure); /*called when the mouse clicks*/
 	int (*motion)(uiEntity *self,float x, float y, float pressure);/*called when the mouse moves over the entity*/
+	int (*key_press)(uiEntity *self,int key, int down);
 	
 	/* drawing */
 	int visible;
@@ -244,55 +245,12 @@ int  uiStateMouseStatus(int button);
 void  uiStateMousePos(float *x, float *y,float *pressure);
 void  uiStateMouseDelta(float *dx, float *dy,float *dp);
 
-/*struct uiEvent_s{
-	int type;
-	uiEntity * source;
-	int channel;
-	int datasize;
-	void *data;
-};*/
-
 void uiEventMouseButton(int button, int down , float x, float y, float pressure);
 void uiEventMouseMotion(float x, float y, float pressure);
 void uiEventMouseDrag(int button, float x, float y, float dx, float dy, float p1, float p2);
-/*void uiEventListen(uiEntity *ent, int channel, int type );
-void uiEventSend(uiEntity *src, int channel, int type, int datasize, void *data);
-void uiEventForget(uiEntity *ent);
-void uiEventProcess(void);
-void uiEventCallback(int channel, int type, int (*callback)(uiEvent *e));
-*/
+void uiEventKeyPress(int key, int down);
 
-#define UI_KEY_ANY (char)(0)
-
-struct ui_action_s{
-	char name[UI_NAME_LENGTH];
-	/* theses represent the various properties in the ui state that
-	 * must match for the action to be triggered
-	 */
-	int  entity_type;
-	char state_name[UI_NAME_LENGTH];
-	char state_value;
-	char hotkey;
-	int  modkey;
-	int  mouse_button;
-	int (*action_start)(uiAction *self, uiEntity *active);
-	int (*action_hold)(uiAction *self, uiEntity *active);
-	int (*action_end)(uiAction *self, uiEntity *active);
-};
-
-void uiActionRegister(const char *name,
-		int entity_type,
-		const char *state_name,
-		int state_value,
-		int modkey,
-		char hotkey,
-		int  mouse_button,
-		int (*action_start)(uiAction *self, uiEntity *active), 
-		int (*action_hold)(uiAction *self, uiEntity *active), 
-		int (*action_end)(uiAction *self, uiEntity *active) );
-
-void uiActionProcess(void);
-
+void uiDrawCircle(float x, float y, float z, float r);
 
 enum color_type{
 	UI_BG_COLOR,

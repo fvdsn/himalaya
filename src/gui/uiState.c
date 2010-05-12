@@ -129,8 +129,12 @@ int  uiStateMod(int mod){
 			return uiStateMod(UI_CTRL_L | UI_CTRL_R);
 		case UI_ALT:
 			return uiStateMod(UI_ALT_L | UI_ALT_R);
-		default: 
-			return mod_key_state & mod;
+		default:
+			if( mod_key_state & mod ){
+				return UI_KEY_DOWN;
+			}else{
+				return UI_KEY_UP;
+			}
 	}
 }
 int  uiStateMouse(int button){

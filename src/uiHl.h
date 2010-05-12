@@ -24,6 +24,11 @@ typedef struct ui_hl_data{
 	float lpx;	/*position of last brush drawn in hl coordinates*/
 	float lpy;
 
+	/*brush draw*/
+	float bpx;
+	float bpy;
+	float br;
+
 	hlList *hist;
 	int hist_cur_index;
 	int hist_max_size;
@@ -39,6 +44,8 @@ void uiHlPushState(uiEntity *hl);
 void uiHlUndo(uiEntity *hl);
 void uiHlRedo(uiEntity *hl);
 void uiHlLog(const char *logfilepath);
-void uiHlReplayLog(const char *logfilepath, uiEntity *hl);
+void uiHlReplayLog(const char *logfilepath, uiEntity *hl,int skip_renders);
+void uiHlSetBoxCount(int box_count);
+void uiHlSetBoxDepth(int index, int depth);
 #endif
 

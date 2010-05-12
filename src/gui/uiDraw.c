@@ -3,6 +3,7 @@
 #include <SDL/SDL.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <math.h>
 #include "uiCore.h"
 
 float bg_color[4] = {0.3,0.3,0.3,1.0};
@@ -63,4 +64,18 @@ void uiWindowDrawBegin(void){
 }
 void uiWindowDrawEnd(void){
 	SDL_GL_SwapBuffers();
+}
+void uiDrawCircle(float x, float y, float z, float r){
+	int segments = 32;
+	float step = 2.0*3.141592/segments;
+	float angle = 0.0f;
+	glEnable(GL_SMOOTH);
+	glBegin(GL_LINE_LOOP);
+	while(segments--){
+		glVertex3f(x+ cosf(angle)*r, y+sinf(angle)*r,z);
+		angle += step;
+	}
+	glEnd();
+	glDisable(GL_SMOOTH);
+
 }

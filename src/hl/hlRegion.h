@@ -20,5 +20,6 @@ hlRegion hlNewRegion(	int px,
 			int sy,
 			int z	);
 void hlPrintRegion(hlRegion r);
+int  hlTileCoordFromCoord(int x);
 
 #endif

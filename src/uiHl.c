@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <limits.h>
 #include <string.h>
 #include <math.h>
 #include <sys/time.h>
@@ -8,8 +9,13 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
+#define BUTTON_PAINT  0
 #define BUTTON_MOVE  1
 #define BUTTON_PAN  2
+
+extern uiEntity *hslider;
+extern uiEntity *sslider;
+extern uiEntity *lslider;
 
 /*tool*/
 float step = 0.2;
@@ -18,6 +24,7 @@ float alpha = 1.0f;
 float softness = 0.9f;
 float randomness = 0.0f;
 float color[4] = {1.0f, 0.0f, 0.0f, 1.0f};
+float hsva[4]  = {0.5,0.5,0.5,0.5};
 
 /*viewport size in hl coordinates*/
 float hlpx = 0.0;
@@ -29,7 +36,29 @@ int   hlopcount = 0;
 FILE *logfile = NULL;
 double starttime = 0.0;
 
+/*box status*/
+#define MAX_BOX_COUNT 10
+int   box_count = 3;
+int   box_depth[MAX_BOX_COUNT] = {16,64,512,INT_MAX,INT_MAX, INT_MAX,INT_MAX,INT_MAX,INT_MAX,INT_MAX};
 
+void uiHlSetBoxCount(int bcount){
+	if (bcount >= 0 && bcount <= MAX_BOX_COUNT){
+		box_count = bcount;
+	}else{
+		fprintf(stderr,"WARNING: uiHlSetBoxCount(): box count %d out of range [0,%d]\n",bcount,MAX_BOX_COUNT);
+	}
+}
+void uiHlSetBoxDepth(int index, int depth){
+	if (index >= 0 && index < MAX_BOX_COUNT){
+		if(depth > 0){
+			box_depth[index] = depth;
+		}else{
+			box_depth[index] = INT_MAX;
+		}
+	}else{
+		fprintf(stderr,"WARNING: uiHlSetBoxDepth(): index %d out of range [0,%d[\n",index,MAX_BOX_COUNT);
+	}
+}
 void uiHlLog(const char *logfilepath){
 	struct timeval time;
 	logfile = fopen(logfilepath,"w");
@@ -83,13 +112,14 @@ static void	uiHlRender(uiEntity *hl,int dx, int dy, int sx, int sy, int zoomleve
 }
 static void uiHlPaintStart(uiEntity *self){
 	uiHlData *hd = (uiHlData*)self->data;
+	int i = box_count;
 	hd->painting = 1;
-	if(uiStateKey('a')){
+	if(uiStateMod(UI_SHIFT)){
 		hd->starting = 0;	/* continue where the previous stroke ended */
 	}
-	hlImgPushOpenBBox(hd->img,100000);
-	hlImgPushOpenBBox(hd->img,9);
-	hlImgPushOpenBBox(hd->img,4);
+	while(i--){
+		hlImgPushOpenBBox(hd->img,box_depth[i]);
+	}
 	UI_LOG("paint_start\n")
 }
 static void uiHlPaintEnd(uiEntity *self){
@@ -103,7 +133,7 @@ static void uiHlPaintCircle(uiEntity *self, float x, float y, float radius_in, f
 	uiHlData *hd = (uiHlData*)self->data;
 	hlColor col = hlNewColor( hd->cs,red,green,blue,0,alpha);
 	hlOp* op = hlNewOp(HL_DRAW_CIRCLE);
-	printf("pos:%f,%f\n",x,y);
+	//printf("pos:%f,%f\n",x,y);
 	hlOpSetAllValue(op,"pos_center",x,y);
 	hlOpSetAllValue(op,"radius_in",radius_in);
 	hlOpSetAllValue(op,"radius_out",radius_out);
@@ -117,7 +147,7 @@ static void uiHlPaintCircle(uiEntity *self, float x, float y, float radius_in, f
 		uiHlLogTime();
 	}
 }
-void uiHlReplayLog(const char *replayfilepath, uiEntity *hl){
+void uiHlReplayLog(const char *replayfilepath, uiEntity *hl,int skip_renders){
 	FILE *log = fopen(replayfilepath,"r");
 	//uiHlData *hd = (uiHlData*)hl->data;
 	char line[1024];
@@ -126,52 +156,50 @@ void uiHlReplayLog(const char *replayfilepath, uiEntity *hl){
 		return;
 	}
 	while(fgets(line,1024,log)){
-		fprintf(stdout,"REPLAY: %s",line);
+		//fprintf(stdout,"REPLAY: %s",line);
 		if(!strncmp(line,"paint_start\n",12)){
 			uiHlPaintStart(hl);
-			fprintf(stdout,"COMMAND: paint_start\n");
+			//fprintf(stdout,"COMMAND: paint_start\n");
 		}else if(!strncmp(line,"paint_end\n",10)){
 			uiHlPaintEnd(hl);
-			fprintf(stdout,"COMMAND: paint_end\n");
+			//fprintf(stdout,"COMMAND: paint_end\n");
 		}else if(!strncmp(line,"paint_circle ",13)){
 			float x, y, radius_in, radius_out, opacity, red, green, blue, alpha;
 			if( 9 == sscanf(line," paint_circle %f %f %f %f %f %f %f %f %f",
 					&x,&y,&radius_in,&radius_out,&opacity,&red,&green,&blue,&alpha)){
 				uiHlPaintCircle(hl,x,y,radius_in,radius_out,opacity,red,green,blue,alpha);
-				fprintf(stdout,"COMMAND: paint_circle\n");
+			//	fprintf(stdout,"COMMAND: paint_circle\n");
 			}else{
 				fprintf(stderr,"ERROR :  paint_circle has wrong number of arguments\n");
 			}
-		}else if(!strncmp(line,"render ",7)){
+		}else if(!strncmp(line,"render ",7) && !skip_renders){
 			int dx,dy,sx,sy,zoomlevel;
 			if( 5 == sscanf(line," render %d %d %d %d %d",&dx,&dy,&sx,&sy,&zoomlevel)){
 				uiHlRender(hl,dx,dy,sx,sy,zoomlevel);
-				fprintf(stdout,"COMMAND: render\n");
+			//	fprintf(stdout,"COMMAND: render\n");
 			}else{
 				fprintf(stderr,"ERROR :  render has wrong number of arguments\n");
 			}
 		}else if(!strncmp(line,"undo\n",5)){
 			uiHlUndo(hl);
-			fprintf(stdout,"COMMAND: undo\n");
+			//fprintf(stdout,"COMMAND: undo\n");
 		}else if(!strncmp(line,"redo\n",5)){
 			uiHlRedo(hl);
-			fprintf(stdout,"COMMAND: redo\n");
+			//fprintf(stdout,"COMMAND: redo\n");
 		}else{
-			fprintf(stdout,"COMMAND: ignored\n");
+			//fprintf(stdout,"COMMAND: ignored\n");
 		}
 	}
 }
 static int uiHlMotion(uiEntity *self, float x, float y, float p){
 	uiHlData *hd = (uiHlData*)self->data;
+	float ralpha = 1.0f;
 	uiEntityMousePos(self,&x,&y,NULL);
-	if(uiStateKey('z') || uiStateKey('x')){
-		return UI_DONE;
-	}else if(uiStateMouse(BUTTON_MOVE) == UI_KEY_DOWN){
-		uiStateMouseDelta(&x,&y,NULL);
-		self->posx += x;
-		self->posy += y;
-		return UI_DONE;
-	}else if(uiStateMouse(BUTTON_PAN) == UI_KEY_DOWN){
+	hd->bpx = x;
+	hd->bpy = y;
+	hd->br  = radius*powf(2,-hd->zoomlevel);
+
+	if(uiStateMouse(BUTTON_PAN) == UI_KEY_DOWN || uiStateMod(UI_SPACE)){
 		uiStateMouseDelta(&x,&y,NULL);
 		hd->dx -= x;
 		hd->dy += y;
@@ -189,10 +217,22 @@ static int uiHlMotion(uiEntity *self, float x, float y, float p){
 		/* we prevent drawing if the stepsize is below 0.25 pixel in
 		 * screenspace so that the user doesn't introduce billions of
 		 * operations in one click */	
-		if(step*radius*powf(2,-hd->zoomlevel) < 0.25){
+		if(step*radius*powf(2,-hd->zoomlevel) < 0.05){
 			fprintf(stderr,"WARNING : step size is too small at this zoomlevel");
 			return UI_DONE;
 		}
+		/*we determine ralpha from alpha*/
+		if(alpha >= 1.0f){
+			ralpha = 1.0f;
+		}else{
+			float layers = 1.0f/step;
+			if(layers < 1.0f){
+				layers = 1.0f;
+			}
+			ralpha = 1.0f - logf(1.0f-alpha)/logf(layers);
+			//fprintf(stdout,"ralpha:%f\n",ralpha);
+		}
+
 		/* we draw the first brush disregarding the step between the
 		 * last one */
 		if(hd->starting){
@@ -220,36 +260,73 @@ static int uiHlMotion(uiEntity *self, float x, float y, float p){
 	}
 	return UI_DONE;
 }
-static int uiHlClick(uiEntity *self, int button, int down, float x, float y, float p){
+static int uiHlKeyPress(uiEntity *self, int key, int down){
 	uiHlData *hd = (uiHlData*)self->data;
+	printf("keypress :%d, %d\n",key,down);
+	if(down == UI_KEY_UP){
+		switch(key){
+			case 'z':
+				uiHlZoomUp(self);
+				return 0;
+			case 'x':
+				uiHlZoomDown(self);
+				return 0;
+			case 'u':
+				uiHlUndo(self);
+				return 0;
+			case 'r':
+				uiHlRedo(self);
+				return 0;
+			case 'g':
+				if(!hd->img){
+					fprintf(stderr,"FAILURE: cannot print graph : image NULL \n");
+				}else{
+					FILE *f = NULL;
+					printf("printing image graph ... ");
+					f = fopen("img.dot","w");
+					hlGraphImg(f,hd->img,HL_GRAPH_SIMPLE);
+					fclose(f);
+					printf("done \n");
+				}
+				return 0;
+			case 'c':
+				if(!hd->img){
+					fprintf(stderr,"FAILURE: cannot colorpick: image NULL \n");
+				}else{
+					float x,y;
+					int px = 0;
+					int py = 0;
+					hlColor col = hlNewColor(hlImgCS(hd->img),0,0,0,0,0);
+					uiEntityMousePos(self,&x,&y,NULL);
+					px = hd->dx + (int)x;
+					//py = hd->dy + (int)(hd->sx - y);
+					py = hd->sy - (y - hd->dy); 	
+					fprintf(stdout,"[%d,%d]\n",px,py);
+					hlImgColorPick(hd->img,0,px,py,hd->zoomlevel,&col);
+					hlPrintColor(&col);
+					color[0] = hlColorGetChan(&col,0);
+					color[1] = hlColorGetChan(&col,1);
+					color[2] = hlColorGetChan(&col,2);
+					hlRgbToHsl(color,hsva);
+					uiSliderSetValue(hslider,hsva[0]);
+					uiSliderSetValue(sslider,hsva[1]);
+					uiSliderSetValue(lslider,hsva[2]);
+
+				}
+				return 0;
+			default:
+				break;
+		}
+	}
+	return 0;
+}
+static int uiHlClick(uiEntity *self, int button, int down, float x, float y, float p){
 	if(button == 0){
 		if(down == UI_KEY_DOWN){
 			uiHlPaintStart(self);
 			uiHlMotion(self,x,y,p);
 		}else{
 			uiHlPaintEnd(self);
-		}
-	}else if(down == UI_KEY_UP){
-		if(uiStateKey('z')){
-			uiHlZoomUp(self);
-		}else if(uiStateKey('x')){
-			uiHlZoomDown(self);
-		}else if(uiStateKey('u')){
-			uiHlUndo(self);
-		}else if(uiStateKey('r')){
-			uiHlRedo(self);
-		}else if(uiStateKey('g')){
-			if(!hd->img){
-				fprintf(stderr,"FAILURE: cannot print graph : image NULL \n");
-			}else{
-				FILE *f = NULL;
-				printf("printing image graph ... ");
-				f = fopen("img.dot","w");
-				hlGraphImg(f,hd->img,HL_GRAPH_SIMPLE);
-				fclose(f);
-				printf("done \n");
-			}
-
 		}
 	}
 	return UI_DONE;
@@ -293,6 +370,10 @@ static void uiHlDraw(uiEntity *self){
 	uiRectDraw(0,0,0,hd->sx,hd->sy);
 	glDisable(GL_TEXTURE_RECTANGLE_ARB);
 	glEnable(GL_BLEND);
+	if(self->mouseover){
+		glColor4f(0.0,0.0,0.0,0.1);
+		uiDrawCircle(hd->bpx,hd->bpy,0.1,hd->br);
+	}
 }
 uiEntity *uiHlNew(const char *name, hlImg *img, hlState s,int sx, int sy){
 	uiEntity *h = uiEntityNew(name,UI_ENT_HL);
@@ -302,6 +383,7 @@ uiEntity *uiHlNew(const char *name, hlImg *img, hlState s,int sx, int sy){
 	h->draw = uiHlDraw;
 	h->click = uiHlClick;
 	h->motion = uiHlMotion;
+	h->key_press = uiHlKeyPress;
 	hd->sx = sx;
 	hd->sy = sy;
 	hd->starting = 1;
@@ -408,7 +490,7 @@ void uiHlRedo(uiEntity *hl){
 		hd->hist_cur_index++;
 		hlImgStateLoad(hd->img,(hlState)hlListGet(hd->hist,hd->hist_cur_index));
 		hd->uptodate = 0;
-		UI_LOG("undo\n")
+		UI_LOG("redo\n")
 	}
 }
 	

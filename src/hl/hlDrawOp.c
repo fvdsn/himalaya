@@ -127,10 +127,10 @@ static int hl_draw_circle_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, 
 					f = num[4];
 				}else {
 					f = get_gauss(r-r0,r1-r0)*num[4];
-					if(r - PIXR < r0){
+					/*	if(r - PIXR < r0){
 						float fg = (r0 - r - PIXR)/(2*PIXR);
 						f = fg + f*(1-fg);
-					}
+					}*/
 					//f = (float)(r1-r)/(float)(r1-r0)*num[4];
 				}
 				if(r1 < PIXR){

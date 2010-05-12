@@ -47,7 +47,7 @@ hlFrame* hlNewFrame(hlColor bgcol, int sx, int sy){
 					f->region.pty,
 					f->region.tx,
 					f->region.ty	); 
-	fprintf(stdout,"NEW FRAME : sx:%d sy:%d depth:%d \n",sx,sy,f->depth); 
+	//fprintf(stdout,"NEW FRAME : sx:%d sy:%d depth:%d \n",sx,sy,f->depth); 
 	hlColorCopy(&f->color,&bgcol);
 	f->cs = hlColorGetCS(&bgcol);
 	f->bg = hlNewTile(hlColorGetCS(&bgcol));

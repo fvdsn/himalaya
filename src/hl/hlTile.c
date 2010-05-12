@@ -66,6 +66,27 @@ void hlTileFill(hlTile *tile, hlColor *col){
 		memcpy(d8+HL_INDEX(i,bpp),col->color,bpp);
 	}
 }
+void	hlTileColorPick(hlTile *tile, hlCS cs,int x, int y, hlColor *color){
+	uint8_t* d8  = HL_DATA_8B(tile);
+	int chan = hlCSGetChan(cs);
+	int bpp  = hlCSGetBpp(cs);
+	int c = chan;
+	color->cs = cs;
+	if(x < 0 || x >= HL_TILEWIDTH){
+		fprintf(stderr,"ERROR, colorpicking x outside tile bounds :%d\n",x);
+		return;
+	}
+	if(y < 0 || y >= HL_TILEWIDTH){
+		fprintf(stderr,"ERROR, colorpicking y outside tile bounds :%d\n",y);
+		return;
+	}
+	while(c--){
+		int clr = d8[(y*HL_TILEWIDTH+x)*bpp + c];
+		printf("%d,",clr);
+		hlColorSetChan(color,c,clr/255.0);
+	}
+	printf("\n");
+}
 void hlTileMult(hlTile *tile, hlColor *col){
 	uint8_t* d8 	= HL_DATA_8B(tile);
 	const int bpp = hlCSGetBpp(hlColorGetCS(col));

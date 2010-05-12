@@ -46,6 +46,7 @@ int  	hlTileSize(hlCS cs);
 void 	hlTileZeroes(hlTile *tile, hlCS cs);
 void 	hlTileRandom(hlTile *tile, hlCS cs);
 void 	hlTileFill(hlTile *tile, hlColor *color);
+void	hlTileColorPick(hlTile *tile, hlCS cs, int x, int y, hlColor *color);
 void	hlTileMult(hlTile *tile,hlColor *color);
 void 	hlTileCopy(hlTile *dst, const hlTile *src, hlCS cs);
 void	hlTileInterp(hlTile *dst, hlCS cs,const hlTile *tl, const hlTile *tr, 
