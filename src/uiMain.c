@@ -22,6 +22,12 @@ uiEntity *hslider = NULL;
 uiEntity *sslider = NULL;
 uiEntity *lslider = NULL;
 
+uiEntity *radius_slider = NULL;
+uiEntity *opacity_slider = NULL;
+uiEntity *softness_slider = NULL;
+uiEntity *randomness_slider = NULL;
+uiEntity *step_slider = NULL;
+
 uiEntity *canvas = NULL;
 static void uiColorSlide(uiEntity *self, float value, int id){
 	hsva[id] = value;
@@ -124,30 +130,35 @@ static uiEntity *uiToolPanel(void){
 	uiEntityFitX(s,1);
 	s->margin_out = 5;
 	uiEntityAdd(s,p);
+	softness_slider = s;
 
 	s = uiSliderNew("Radius",1,1,100000000,0.01,2,radius,&radius,NULL);
 	uiEntityAlign(s,UI_ALIGN_NORTH);
 	uiEntityFitX(s,1);
 	s->margin_out = 5;
 	uiEntityAdd(s,p);
+	radius_slider = s;
 
 	s = uiSliderNew("Step",1,0.1,2,0.025,0,step,&step,NULL);
 	uiEntityAlign(s,UI_ALIGN_NORTH);
 	uiEntityFitX(s,1);
 	s->margin_out = 5;
 	uiEntityAdd(s,p);
+	step_slider = s;
 
 	s = uiSliderNew("Randomness",1,0,5,0.025,0,randomness,&randomness,NULL);
 	uiEntityAlign(s,UI_ALIGN_NORTH);
 	uiEntityFitX(s,1);
 	s->margin_out = 5;
 	uiEntityAdd(s,p);
+	randomness_slider = s;
 
 	s = uiSliderNew("Opacity",1,0.01,1,0.025,0,alpha,&alpha,NULL);
 	uiEntityAlign(s,UI_ALIGN_NORTH);
 	uiEntityFitX(s,1);
 	s->margin_out = 5;
 	uiEntityAdd(s,p);
+	opacity_slider = s;
 
 	return p;
 }

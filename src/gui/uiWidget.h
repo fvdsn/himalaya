@@ -45,6 +45,7 @@ uiEntity *uiSliderNew(const char *name,
 		float *dest_value,
 		void (*slide)(uiEntity*self,float value,int id));
 void	 uiSliderSetValue(uiEntity *slider, float value);
+float	 uiSliderGetValue(uiEntity *slider);
 
 uiEntity *uiDisplayFloatNew(const char *name, float *display_value);
 uiEntity *uiDisplayIntNew(const char *name, int *display_value);

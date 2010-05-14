@@ -17,6 +17,12 @@ extern uiEntity *hslider;
 extern uiEntity *sslider;
 extern uiEntity *lslider;
 
+extern uiEntity *radius_slider;
+extern uiEntity *opacity_slider;
+extern uiEntity *softness_slider;
+extern uiEntity *step_slider;
+extern uiEntity *randomness_slider;
+
 /*tool*/
 float step = 0.2;
 float radius = 32.0f;
@@ -25,6 +31,20 @@ float softness = 0.9f;
 float randomness = 0.0f;
 float color[4] = {1.0f, 0.0f, 0.0f, 1.0f};
 float hsva[4]  = {0.5,0.5,0.5,0.5};
+
+/*actions*/
+enum actions{
+	ACTION_OPACITY,
+	ACTION_RADIUS,
+	ACTION_SOFTNESS,
+	ACTION_STEP,
+	ACTION_RANDOMNESS,
+	ACTION_NONE
+};
+int   action_current = ACTION_NONE;
+float action_px = 0.0f;
+float action_py = 0.0f;
+float action_value = 0.0f;
 
 /*viewport size in hl coordinates*/
 float hlpx = 0.0;
@@ -195,9 +215,24 @@ static int uiHlMotion(uiEntity *self, float x, float y, float p){
 	uiHlData *hd = (uiHlData*)self->data;
 	float ralpha = 1.0f;
 	uiEntityMousePos(self,&x,&y,NULL);
+	/*for radius circle drawing */
 	hd->bpx = x;
 	hd->bpy = y;
 	hd->br  = radius*powf(2,-hd->zoomlevel);
+	if(action_current != ACTION_NONE){
+		float dx = x-action_px;
+		float fact = powf(1.0075,dx);
+		if(action_current == ACTION_OPACITY){
+			uiSliderSetValue(opacity_slider,action_value*fact);
+		}else if(action_current == ACTION_RADIUS){
+			uiSliderSetValue(radius_slider,action_value*fact);
+		}else if(action_current == ACTION_SOFTNESS){
+			uiSliderSetValue(softness_slider,action_value*fact);
+		}else if(action_current == ACTION_STEP){
+			uiSliderSetValue(step_slider,action_value*fact);
+		}
+		return UI_DONE;
+	}
 
 	if(uiStateMouse(BUTTON_PAN) == UI_KEY_DOWN || uiStateMod(UI_SPACE)){
 		uiStateMouseDelta(&x,&y,NULL);
@@ -263,8 +298,31 @@ static int uiHlMotion(uiEntity *self, float x, float y, float p){
 static int uiHlKeyPress(uiEntity *self, int key, int down){
 	uiHlData *hd = (uiHlData*)self->data;
 	printf("keypress :%d, %d\n",key,down);
+	if(down == UI_KEY_DOWN){
+		if(key == 'w'){
+			uiEntityMousePos(self,&action_px,&action_py,NULL);
+			if(uiStateMod(UI_SHIFT) == UI_KEY_DOWN){
+				action_current = ACTION_OPACITY;
+				action_value   = uiSliderGetValue(opacity_slider);
+			}else if(uiStateMod(UI_CTRL) == UI_KEY_DOWN){
+				action_current = ACTION_SOFTNESS;
+				action_value   = uiSliderGetValue(softness_slider);
+			}else if(uiStateMod(UI_ALT) == UI_KEY_DOWN){
+				action_current = ACTION_STEP;
+				action_value   = uiSliderGetValue(step_slider);
+			}else{
+				action_current = ACTION_RADIUS;
+				action_value   = uiSliderGetValue(radius_slider);
+			}
+			fprintf(stdout,"Actionvalue: %f\n",action_value);
+			return 0;
+		}
+	}
 	if(down == UI_KEY_UP){
 		switch(key){
+			case 'w':
+				action_current = ACTION_NONE;
+				return 0;
 			case 'z':
 				uiHlZoomUp(self);
 				return 0;
@@ -371,8 +429,29 @@ static void uiHlDraw(uiEntity *self){
 	glDisable(GL_TEXTURE_RECTANGLE_ARB);
 	glEnable(GL_BLEND);
 	if(self->mouseover){
-		glColor4f(0.0,0.0,0.0,0.1);
-		uiDrawCircle(hd->bpx,hd->bpy,0.1,hd->br);
+		if(action_current == ACTION_NONE){
+			glColor4f(0.0,0.0,0.0,0.1);
+			uiDrawCircle(hd->bpx,hd->bpy,0.1,hd->br);
+		}else if(action_current == ACTION_RADIUS){
+			glColor4f(0.0,0.0,0.0,1);
+			uiDrawCircle(hd->bpx,hd->bpy,0.1,hd->br);
+		}else if(action_current == ACTION_SOFTNESS){
+			glColor4f(0.0,0.0,0.0,0.75);
+			uiDrawCircle(hd->bpx,hd->bpy,0.1,hd->br);
+			uiDrawCircle(hd->bpx,hd->bpy,0.1,hd->br*(1.0f-softness));
+		}else if(action_current == ACTION_OPACITY){
+			glColor4f(0.0,0.0,0.0,alpha);
+			uiDrawCircle(hd->bpx,hd->bpy,0.1,hd->br);
+			uiDrawCircle(hd->bpx,hd->bpy,0.1,hd->br*1.1);
+			uiDrawCircle(hd->bpx,hd->bpy,0.1,hd->br*0.9);
+			glColor4f(0.0,0.0,0.0,0.5);
+			uiDrawCircle(hd->bpx,hd->bpy,0.1,hd->br*alpha);
+		}else if(action_current == ACTION_STEP){
+			glColor4f(0.0,0.0,0.0,0.75);
+			uiDrawCircle(hd->bpx,hd->bpy,0.1,hd->br);
+			uiDrawCircle(hd->bpx+hd->br*step,hd->bpy,0.1,hd->br);
+			uiDrawCircle(hd->bpx-hd->br*step,hd->bpy,0.1,hd->br);
+		}
 	}
 }
 uiEntity *uiHlNew(const char *name, hlImg *img, hlState s,int sx, int sy){

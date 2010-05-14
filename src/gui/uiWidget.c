@@ -105,11 +105,26 @@ void	 uiSliderSetValue(uiEntity *slider, float value){
 	}else if(value < sd->min_value){
 		value = sd->min_value;
 	}
-	sd->value = value;
 	if(sd->slide){
-		sd->slide(slider,sd->value,sd->id);
-	}else if(sd->dest_value){
-		*(sd->dest_value) = sd->value;
+		sd->slide(slider,value,sd->id);
+	}
+	if(sd->dest_value){
+		if(sd->base == 0.0f){
+			sd->value = value;
+			*(sd->dest_value) = sd->value;
+		}else{
+			sd->value = logf(value)/logf(sd->base);
+			sd->exp_value = value;
+			*(sd->dest_value) = sd->exp_value;
+		}
+	}
+}
+float	 uiSliderGetValue(uiEntity *slider){
+	uiSliderData *sd = (uiSliderData*)slider->data;
+	if (sd->base == 0.0f){
+		return sd->value;
+	}else{
+		return sd->exp_value;
 	}
 }
 static int uiSliderMotion(uiEntity *self,float x, float y, float p){
