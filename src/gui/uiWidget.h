@@ -58,7 +58,6 @@ int uiTabAdd(uiEntity *tabenv, uiEntity *tab);
 
 uiEntity *uiRegionNew(const char *name,float inner_sx, float inner_sy);
 uiEntity *uiRectNew(const char *name,float sx, float sy, float r, float g, float b);
-void uiRectDraw(float x, float y, float z,float sx, float sy);
 
 uiEntity *uiDivNew(const char *name, float sx, float sy);
 #endif

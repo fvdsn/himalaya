@@ -8,18 +8,6 @@
 #include "uiCore.h"
 #include "uiWidget.h"
 
-void uiRectDraw(float x, float y, float z,float sx, float sy){
-	glBegin(GL_QUADS);
-		glTexCoord2f(0.0,sy);
-		glVertex3f(x,		y,		z);
-		glTexCoord2f(sx,sy);
-		glVertex3f(x+sx,	y,		z);
-		glTexCoord2f(sx,0.0);
-		glVertex3f(x+sx,	y+sy,		z);
-		glTexCoord2f(0.0,0.0);
-		glVertex3f(x,		y+sy,		z);
-	glEnd();
-}
 uiEntity *uiScreenNew(const char *name){
 	uiEntity *s = uiEntityNew(name,UI_ENT_SCREEN);
 	uiEntitySetSize(s,10000,10000);
@@ -107,8 +95,13 @@ void	 uiSliderSetValue(uiEntity *slider, float value){
 	}
 	if(sd->slide){
 		sd->slide(slider,value,sd->id);
-	}
-	if(sd->dest_value){
+		if(sd->base == 0.0f){
+			sd->value = value;
+		}else{
+			sd->value = logf(value)/logf(sd->base);
+			sd->exp_value = value;
+		}
+	}else if(sd->dest_value){
 		if(sd->base == 0.0f){
 			sd->value = value;
 			*(sd->dest_value) = sd->value;
@@ -179,11 +172,6 @@ static int uiSliderExpMotion(uiEntity *self,float x, float y, float p){
 			sd->value = v;
 			sd->exp_value = ev;
 		}
-		printf("Slider [%f,%f] base:%f -> value :%f ->exp_value :%f\n",
-				sd->min_value,
-				sd->max_value,
-				sd->base,
-				v,ev);
 		if(dx != 0.0){
 			if (sd->slide){
 				sd->slide(self,sd->exp_value,sd->id);

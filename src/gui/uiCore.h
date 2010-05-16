@@ -251,6 +251,8 @@ void uiEventMouseDrag(int button, float x, float y, float dx, float dy, float p1
 void uiEventKeyPress(int key, int down);
 
 void uiDrawCircle(float x, float y, float z, float r);
+void uiDrawDisc(float x, float y, float z, float r);
+void uiRectDraw(float x, float y, float z,float sx, float sy);
 
 enum color_type{
 	UI_BG_COLOR,

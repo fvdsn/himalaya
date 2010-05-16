@@ -69,13 +69,38 @@ void uiDrawCircle(float x, float y, float z, float r){
 	int segments = 32;
 	float step = 2.0*3.141592/segments;
 	float angle = 0.0f;
-	glEnable(GL_SMOOTH);
+	glEnable(GL_LINE_SMOOTH);
 	glBegin(GL_LINE_LOOP);
 	while(segments--){
 		glVertex3f(x+ cosf(angle)*r, y+sinf(angle)*r,z);
 		angle += step;
 	}
 	glEnd();
-	glDisable(GL_SMOOTH);
+	glDisable(GL_LINE_SMOOTH);
 
+}
+void uiDrawDisc(float x, float y, float z, float r){
+	int segments = 32;
+	float step = 2.0*3.141592/(segments-1);
+	float angle = 0.0f;
+	glBegin(GL_TRIANGLE_FAN);
+	glVertex3f(x,y,z);
+	while(segments--){
+		glVertex3f(x+ cosf(angle)*r, y+sinf(angle)*r,z);
+		angle += step;
+	}
+	glEnd();
+
+}
+void uiRectDraw(float x, float y, float z,float sx, float sy){
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0,sy);
+		glVertex3f(x,		y,		z);
+		glTexCoord2f(sx,sy);
+		glVertex3f(x+sx,	y,		z);
+		glTexCoord2f(sx,0.0);
+		glVertex3f(x+sx,	y+sy,		z);
+		glTexCoord2f(0.0,0.0);
+		glVertex3f(x,		y+sy,		z);
+	glEnd();
 }
