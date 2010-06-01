@@ -415,3 +415,28 @@ uiEntity *uiDivNew(const char *name, float sx, float sy){
 	d->sizey = sy;
 	return d;
 }
+
+static void uiTextEntryDraw(uiEntity *self){
+	float x = 0;
+	float y = 0;
+	float z = 0;
+	glColor4f(0,0,0,0.2);
+	uiRectDraw(x+3,y-3,z-0.1,self->sizex,self->sizey);
+	glColor4fv(uiWindowGetColor(UI_ITEM_COLOR,UI_NORMAL_COLOR));
+	uiRectDraw(x,y,z,self->sizex,self->sizey);
+	if(self->mouseover){
+		glColor4f(1,0.2,0,1);
+	}else{
+		glColor4f(0,0,0,0.2);	
+	}
+	uiRectDraw(x+3,y+3,z,self->sizex-6,self->sizey-6);
+	glColor4f(0,0,0,1);	
+	uiStringDraw(self->string,0,0,0.1,self->sizex,self->sizey);	
+}
+uiEntity *uiTextEntryNew(const char *name, const char *text){
+	uiEntity *l = uiEntityNew(name,UI_ENT_TEXTENTRY);
+	l->string = uiStringNew(text,10,UI_BUTTON_WIDTH,UI_BUTTON_HEIGHT,5,11);
+	l->draw = uiTextEntryDraw;
+	uiEntitySetSize(l,UI_BUTTON_WIDTH,UI_BUTTON_HEIGHT);
+	return l;
+}

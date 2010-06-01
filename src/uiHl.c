@@ -156,13 +156,20 @@ static void uiHlPaintEnd(uiEntity *self){
 static void uiHlPaintCircle(uiEntity *self, float x, float y, float radius_in, float radius_out, float opacity, float red, float green, float blue, float alpha){
 	uiHlData *hd = (uiHlData*)self->data;
 	hlColor col = hlNewColor( hd->cs,red,green,blue,0,alpha);
+	/*
 	hlOp* op = hlNewOp(HL_DRAW_CIRCLE);
 	//printf("pos:%f,%f\n",x,y);
 	hlOpSetAllValue(op,"pos_center",x,y);
 	hlOpSetAllValue(op,"radius_in",radius_in);
 	hlOpSetAllValue(op,"radius_out",radius_out);
+	*/
+	hlOp *op = hlNewOp(HL_DRAW_TRIANGLE);
+	hlOpSetAllValue(op,"v0",x,y);
+	hlOpSetAllValue(op,"v1",x+radius_out,y+radius_in);
+	hlOpSetAllValue(op,"v2",x-radius_in, y+radius_out);
 	hlOpSetAllValue(op,"alpha",opacity);
 	hlOpSetAllColor(op,"fill_color",col);
+
 	hlImgPushOp(hd->img,op);
 	hlopcount++;
 	if(logfile){
@@ -305,8 +312,13 @@ static int uiHlMotion(uiEntity *self, float x, float y, float p){
 	}
 	return UI_DONE;
 }
+static void popup_click(uiEntity*self,int id){
+	printf("yo\n");
+	uiEntityDestroy(self);
+}
 static int uiHlKeyPress(uiEntity *self, int key, int down){
 	uiHlData *hd = (uiHlData*)self->data;
+	float x,y;
 	if(down == UI_KEY_UP){
 		switch(key){
 			case 'z':
@@ -320,6 +332,12 @@ static int uiHlKeyPress(uiEntity *self, int key, int down){
 				return 0;
 			case 'r':
 				uiHlRedo(self);
+				return 0;
+			case 'p':
+				uiEntityMousePos(self,&x,&y,NULL);
+				uiEntity *e = uiButtonNew("Test",0,popup_click);
+				uiEntitySetPos(e,x,y);
+				uiEntityAddPopup(e,self);
 				return 0;
 			case 'g':
 				if(!hd->img){
@@ -503,7 +521,7 @@ uiEntity *uiHlNew(const char *name, hlImg *img, hlState s,int sx, int sy){
 	hd->sy = sy;
 	hd->starting = 1;
 	hd->hist = hlNewList();
-	hd->hist_max_size = 8;
+	hd->hist_max_size = MAX_UNDO_LEVEL;
 	uiEntitySetSize(h,sx,sy);
 	uiHlSetImg(h,img,s);
 	hd->raw = hlNewRaw(hd->cs,sx,sy);

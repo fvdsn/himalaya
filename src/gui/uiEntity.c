@@ -16,6 +16,8 @@ static uiEntity *ent_active;	/* if not null, all events go trough that
 				   entity even if the mouse is not over.
 				  */
 static uiEntity *ent_screen;	/* The root entity that is currently drawn */
+static uiList *popups;		/* The root popups entity */
+
 static void uiEntityInnerTighten(uiEntity *e){
 	uiNode *n;
 	uiEntity *c;
@@ -189,6 +191,13 @@ void uiEntityLayoutAll(){
 		ent_screen->posy = 0;
 		uiEntityLayout(ent_screen);
 	}
+	if(popups){
+		uiNode *n = popups->first;
+		while(n){
+			uiEntityLayout((uiEntity*)(n->data));
+			n = n->next;
+		}
+	}
 }
 static void uiEntityDraw(uiEntity *e){
 	float x,y;
@@ -230,6 +239,13 @@ void uiEntityDrawAll(){
 	if(ent_screen){
 		uiEntityDraw(ent_screen);
 	}
+	if(popups){
+		uiNode *n = popups->first;
+		while(n){
+			uiEntityDraw((uiEntity*)(n->data));
+			n = n->next;
+		}
+	}
 }
 void uiEntityAdd(uiEntity*ent, uiEntity*parent){
 	if(!parent->child){
@@ -240,6 +256,15 @@ void uiEntityAdd(uiEntity*ent, uiEntity*parent){
 	ent->visible = 1;
 	ent_count++;
 }
+void uiEntityAddPopup(uiEntity *popup, uiEntity *spawner){
+	popup->posx += uiEntityGetPosX(spawner);
+	popup->posy += uiEntityGetPosY(spawner);
+	popup->visible = 1;
+	if(!popups){
+		popups = uiListNew();
+	}
+	uiListAdd(popups,popup);
+}
 void uiScreenSet(uiEntity *ent){
 	if(ent->type == UI_ENT_SCREEN){
 		ent_screen = ent;
@@ -249,7 +274,19 @@ void uiScreenSet(uiEntity *ent){
 		printf("WARNING : Cannot set non-screen entity as current screen\n");
 	}
 }
-static void uiEntityClean(uiEntity *ent){
+void	uiEntityDestroy(uiEntity *ent){
+	if(ent){
+		ent->alive = 0;
+		if(ent->child){
+			uiNode *n = ent->child->first;
+			while(n){
+				uiEntityDestroy((uiEntity*)n->data);
+				n = n->next;
+			}
+		}
+	}
+}
+static int uiEntityClean(uiEntity *ent){
 	uiNode *n;
 	if(ent->child){
 		n = ent->child->first;
@@ -264,12 +301,25 @@ static void uiEntityClean(uiEntity *ent){
 		}
 		uiEntityFree(ent);
 		ent_count--;
+		return 1;
 	}
+	return 0;
 }
 		
 void uiEntityCleanAll(void){
 	if(ent_screen){
 		uiEntityClean(ent_screen);
+	}
+	if(popups){
+		uiNode *n = popups->first;
+		while(n){
+			if(uiEntityClean((uiEntity*)(n->data))){
+				uiListRemove(popups,n->data);
+				n = popups->first;
+			}else{
+				n = n->next;
+			}
+		}
 	}
 }
 uiEntity * uiEntityNew(const char *name, int type ){
@@ -406,6 +456,17 @@ static uiEntity *uiEntityPickEnt(uiEntity *ent, float posx, float posy){
 	return ent;
 }
 uiEntity *uiEntityPick(float posx, float posy){
+	if(popups){
+		uiEntity *e = NULL;
+		uiNode *n = popups->first;
+		while(n){
+			e = uiEntityPickEnt((uiEntity*)(n->data),posx,posy);
+			if(e){
+				return e;
+			}
+			n = n->next;
+		}
+	}
 	return uiEntityPickEnt(ent_screen,posx,posy);
 }
 uiEntity *uiEntityGetActive(){

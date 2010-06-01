@@ -114,6 +114,12 @@ static uiEntity *uiStatPanel(void){
 	e->margin_out = 5;
 	uiEntityAdd(e,p);
 
+	e = uiTextEntryNew("Name:","Text"); 
+	uiEntityFitX(e,1);
+	uiEntityAlign(e,UI_ALIGN_NORTH);
+	e->margin_out = 5;
+	uiEntityAdd(e,p);
+
 	return p;
 }
 static uiEntity *uiToolPanel(void){

@@ -60,5 +60,9 @@ uiEntity *uiRegionNew(const char *name,float inner_sx, float inner_sy);
 uiEntity *uiRectNew(const char *name,float sx, float sy, float r, float g, float b);
 
 uiEntity *uiDivNew(const char *name, float sx, float sy);
+
+uiEntity *uiTextEntryNew(const char *name, const char *text);
+const char* uiTextEntryGetText(const uiEntity *e);
+
 #endif
 

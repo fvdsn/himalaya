@@ -3,7 +3,7 @@
 #include "gui/uiCore.h"
 #include "hl/hlImg.h"
 
-#define MAX_UNDO_LEVEL 20
+#define MAX_UNDO_LEVEL 16
 
 typedef struct ui_hl_data{
 	hlImg *img;

@@ -27,6 +27,7 @@ enum ui_entity_type{
 	UI_ENT_COLOR,
 	UI_ENT_CANVAS,
 	UI_ENT_LABEL,
+	UI_ENT_TEXTENTRY,
 	UI_ENT_CAIROLABEL,
 	UI_ENT_REGION,
 	UI_ENT_TABENV,
@@ -149,6 +150,7 @@ struct uiEntity_s{
  * NULL
  */
 uiEntity * uiEntityNew(const char *name, int type);
+void	uiEntityDestroy(uiEntity *ent);
 /** Changes the position of the bottom left corner of the entity, relative to
  * the parent entity position.
  * @param ent The entity, must not be null
@@ -178,6 +180,7 @@ void    uiEntityFree(uiEntity *ent);
 void 	uiEntityCleanAll(void);
 void 	uiEntityDrawAll(void);
 void 	uiEntityLayoutAll(void);
+void 	uiEntityAddPopup(uiEntity *ent, uiEntity *parent);
 void 	uiEntityAdd(uiEntity*ent,uiEntity *parent);
 float 	uiEntityGetPosX(uiEntity *ent);
 float 	uiEntityGetPosY(uiEntity *ent);
