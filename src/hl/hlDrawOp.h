@@ -26,4 +26,5 @@ int  hlDrawSkip(hlOp *p,int tx, int ty, int tz );
 void hlDrawOpaque(hlTile *a, hlOp *p, int tx, int ty, int tz);
 void hlSquareBBoxFun(const hlOp *op, hlBBox *box);
 void hlCircleBBoxFun(const hlOp *op, hlBBox *box);
+void hlTriangleBBoxFun(const hlOp *op, hlBBox *box);
 #endif

@@ -102,5 +102,16 @@ void hlInit(void){
 	hlOpClassAddColor(	c,"fill_color", "the fill color ",1);
 	hlOpClassAddBBoxFun(	c, hlCircleBBoxFun);
 
+	c = hlNewOpClass(	"draw_triangle",	"draw a triangle",
+				HL_DRAW_TRIANGLE,	HL_DRAW,	NULL	);
+	hlOpClassAddNum(	c,"v0","coordinates of the first vertex",2,0,1);
+	hlOpClassAddNum(	c,"v1","coordinates of the second vertex",2,0,1);
+	hlOpClassAddNum(	c,"v2","coordinates of the third vertex",2,0,1);
+	hlOpClassAddNum(	c,"alpha",	"opacity of the triangle",1,0,1);
+	hlOpClassAddColor(	c,"fill_color", "the fill color ",1);
+	hlOpClassAddBBoxFun(	c, hlTriangleBBoxFun);
+
+
+
 }
 

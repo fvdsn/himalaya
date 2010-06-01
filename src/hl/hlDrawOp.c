@@ -153,14 +153,147 @@ static int hl_draw_circle_8b(hlTile *a,hlColor *c, int chan,float *num, int tx, 
 	return oversampling;
 }
 
+void hlTriangleBBoxFun(const hlOp *op, hlBBox *box){
+	float minx = fminf(op->p_num[0], fminf(op->p_num[2], op->p_num[4]));
+	float maxx = fmaxf(op->p_num[0], fmaxf(op->p_num[2], op->p_num[4]));
+	float miny = fminf(op->p_num[1], fminf(op->p_num[3], op->p_num[5]));
+	float maxy = fmaxf(op->p_num[1], fmaxf(op->p_num[3], op->p_num[5]));
+
+	box->infinite = 0;
+	box->tx  = (int)(floorf(minx/HL_TILEWIDTH));
+	box->ty  = (int)(floorf(miny/HL_TILEWIDTH));
+	box->btx = (int)(floorf(maxx/HL_TILEWIDTH)) + 1;
+	box->bty = (int)(floorf(maxy/HL_TILEWIDTH)) + 1;
+}
+static int hl_draw_tri_8b(hlTile *a, hlColor *c, int chan, float *num, int tx, int ty, int tz){
+	uint8_t* data = HL_DATA_8B(a);
+	const uint8_t* color = hlColorGetData(c);
+	float X = tx*HL_TILEWIDTH;
+	float Y = ty*HL_TILEWIDTH;
+	float x0 = hl_scale_float(num[0],tz) - X;
+	float y0 = hl_scale_float(num[1],tz) - Y;
+	float x1 = hl_scale_float(num[2],tz) - X;
+	float y1 = hl_scale_float(num[3],tz) - Y;
+	float x2 = hl_scale_float(num[4],tz) - X;
+	float y2 = hl_scale_float(num[5],tz) - Y;
+	float maxx = fmaxf(x0,fmaxf(x1,x2));
+	float maxy = fmaxf(y0,fmaxf(y1,y2));
+	float minx = fminf(x0,fminf(x1,x2));
+	float miny = fminf(y0,fminf(y1,y2));
+	float dx01 = x0 - x1;
+	float dx12 = x1 - x2;
+	float dx20 = x2 - x0;
+	float dy01 = y0 - y1;
+	float dy12 = y1 - y2;
+	float dy20 = y2 - y0;
+	int x = HL_TILEWIDTH;
+	int y = HL_TILEWIDTH;
+	int oversampling = 0;
+	if(	minx >= HL_TILEWIDTH || miny >= HL_TILEWIDTH || maxx < 0.0f || maxy < 0.0f ){
+		return 0;
+	}
+	if(     (dx01 * (0.0f - y0) - dy01 * (0.0f - x0)) < 0.0f &&
+		(dx12 * (0.0f - y1) - dy12 * (0.0f - x1)) < 0.0f &&
+		(dx20 * (0.0f - y2) - dy20 * (0.0f - x2)) < 0.0f && 
+		(dx01 * (HL_TILEWIDTH - y0) - dy01 * (0.0f - x0)) < 0.0f &&
+		(dx12 * (HL_TILEWIDTH - y1) - dy12 * (0.0f - x1)) < 0.0f &&
+		(dx20 * (HL_TILEWIDTH - y2) - dy20 * (0.0f - x2)) < 0.0f && 
+		(dx01 * (HL_TILEWIDTH - y0) - dy01 * (HL_TILEWIDTH - x0)) < 0.0f &&
+		(dx12 * (HL_TILEWIDTH - y1) - dy12 * (HL_TILEWIDTH - x1)) < 0.0f &&
+		(dx20 * (HL_TILEWIDTH - y2) - dy20 * (HL_TILEWIDTH - x2)) < 0.0f && 
+		(dx01 * (0.0f - y0) - dy01 * (HL_TILEWIDTH - x0)) < 0.0f &&
+		(dx12 * (0.0f - y1) - dy12 * (HL_TILEWIDTH - x1)) < 0.0f &&
+		(dx20 * (0.0f - y2) - dy20 * (HL_TILEWIDTH - x2)) < 0.0f ){
+		while(x--){
+			y = HL_TILEWIDTH;
+			while(y--){
+				hl_blend_mix_8b(data + (y*HL_TILEWIDTH+x)*chan,
+						color,
+						chan,
+						num[6]);
+			}
+		}
+	}else{	
+		x = (int)minx < 0 ? 0 : (int)minx;
+		while(x < HL_TILEWIDTH && x <= maxx){
+			y = (int)miny < 0 ? 0 : (int)miny;
+			while(y < HL_TILEWIDTH && y <= maxy){
+				/*float f0,f1,f2,f;
+				f = 1.0f;
+				f0 = ( (dx01 * (y - y0)) - (dy01 * (x - x0)) );
+				if(f0 > 10.0f){
+					y++;
+					continue;
+				}else if( f0 >= -10.0f){
+					f *= (10.0f+f0)/20.0f;
+				}
+				f1 = (dx12 * (y - y1)) - (dy12 * (x - x1));
+				if(f1 > 10.0f){
+					y++;
+					continue;
+				}else if( f1 >= -10.0f){
+					f *= (10.0f+f1)/20.0f;
+				}
+				f2 = (dx20 * (y - y2)) - (dy20 * (x - x2));
+				if(f2 > 10.0f){
+					y++;
+					continue;
+				}else if (f2 >= -10.0f){
+					f *= (10.0f+f2)/20.0f;
+				}
+				hl_blend_mix_8b(data + (y*HL_TILEWIDTH+x)*chan,
+							color,
+							chan,
+							num[6]*f);
+				y++;*/
+				if(  ( (dx01 * (y - y0)) - (dy01 * (x - x0)) ) < 0.0f &&
+				     ( (dx12 * (y - y1)) - (dy12 * (x - x1)) ) < 0.0f &&
+				     ( (dx20 * (y - y2)) - (dy20 * (x - x2)) ) < 0.0f ){
+					hl_blend_mix_8b(data + (y*HL_TILEWIDTH+x)*chan,
+							color,
+							chan,
+							num[6]);
+				}
+				y++;
+			}
+			x++;
+		}
+	}
+	return oversampling;
+}
+/*
+static int hl_draw_line_8b(hlTile *a, hlColor *c, int chan, float *num, int tx, int ty, int tz){
+	uint8_t* data = HL_DATA_8B(a);
+	const uint8_t* color = hlColorGetData(c);
+	float X = tx*HL_TILEWIDTH;
+	float Y = ty*HL_TILEWIDTH;
+	float x0 = hl_scale_float(num[0],tz) - X;
+	float y0 = hl_scale_float(num[1],tz) - Y;
+	float x1 = hl_scale_float(num[2],tz) - X;
+	float y1 = hl_scale_float(num[3],tz) - Y;
+	float d  = hl_scale_float(num[4],tz);
+	float maxx = fmaxf(x0,x1);
+	float maxy = fmaxf(y0,y1);
+	float minx = fminf(x0,x1);
+	float miny = fminf(y0,y1);
+	float dx01 = x0 - x1;
+	float dx12 = x1 - x2;
+	float dy01 = y0 - y1;
+	float dy12 = y1 - y2;
+	int x = HL_TILEWIDTH;
+	int y = HL_TILEWIDTH;
+	int oversampling = 0;
+	return oversampling;
+}*/
+
 static int hl_draw_8b(hlTile *a, int id, hlColor *c, int chan, float *num, int tx, int ty, int tz){
 	switch(id){
 		case HL_DRAW_RECT:
 		hl_draw_rect_8b(a,c,chan,num,tx,ty,tz);
-		break;
 		case HL_DRAW_CIRCLE:
 		return hl_draw_circle_8b(a,c,chan,num,tx,ty,tz);
-		break;
+		case HL_DRAW_TRIANGLE:
+		return hl_draw_tri_8b(a,c,chan,num,tx,ty,tz);
 	}
 	return 0;
 }
