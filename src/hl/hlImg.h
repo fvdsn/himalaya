@@ -100,7 +100,7 @@ void 	hlImgModOpHint(hlImg *img, hlOpRef ref);
  *  @param img : the image
  *  @return : A reference to the BBox operation
  */
-hlOpRef hlImgPushOpenBBox(hlImg *img,int max_depth);
+hlOpRef hlImgPushOpenBBox(hlImg *img,int rec_level, int max_depth, float max_ratio);
 /** Close the deepest open bounding box.
  * @parm img : the image
  */

@@ -46,6 +46,7 @@ void uiHlRedo(uiEntity *hl);
 void uiHlLog(const char *logfilepath);
 void uiHlReplayLog(const char *logfilepath, uiEntity *hl,int skip_renders);
 void uiHlSetBoxCount(int box_count);
+void uiHlSetMaxRatio(float max_ratio);
 void uiHlSetBoxDepth(int index, int depth);
 #endif
 

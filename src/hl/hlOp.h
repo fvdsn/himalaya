@@ -81,6 +81,10 @@ struct hl_op{
 	int open; /*if 1, the bbox is open and can be modified to fit new operations*/
 	int depth;
 	int max_depth;
+	float ratio;
+	float max_ratio;
+	int   state_cut;
+	int   rec_level;
 
 	void (*render)(hlTile *dst, hlOp *p);
 

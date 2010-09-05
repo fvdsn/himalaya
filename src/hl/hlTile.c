@@ -15,7 +15,7 @@ hlTile *hlNewTile(hlCS cs){
 	return tile;
 }
 void hlFreeTile(hlTile *tile){
-	fprintf(stdout,"hlFreeTile(%p)\n",(void*)tile);
+	//fprintf(stdout,"hlFreeTile(%p)\n",(void*)tile);
 	num_tile--;
 	free(tile);
 }

@@ -114,11 +114,11 @@ static uiEntity *uiStatPanel(void){
 	e->margin_out = 5;
 	uiEntityAdd(e,p);
 
-	e = uiTextEntryNew("Name:","Text"); 
+	/*e = uiTextEntryNew("Name:","Text"); 
 	uiEntityFitX(e,1);
 	uiEntityAlign(e,UI_ALIGN_NORTH);
 	e->margin_out = 5;
-	uiEntityAdd(e,p);
+	uiEntityAdd(e,p);*/
 
 	return p;
 }
@@ -263,6 +263,15 @@ int main(int argc, char **argv){
 			}else{
 				fprintf(stdout,"Box count : %d\n",box_count);
 				uiHlSetBoxCount(box_count);
+			}
+		}else if(!strncmp(argv[i],"--maxratio=",11)){
+			float max_ratio= 0.0f;
+			if(!sscanf(argv[i],"--maxratio=%f",&max_ratio)){
+				fprintf(stderr,"ERROR: no float provided to --max_ratio=FLOAT option\n");
+				exit(1);
+			}else{
+				fprintf(stdout,"Max ratio : %f\n",max_ratio);
+				uiHlSetMaxRatio(max_ratio);
 			}
 		}else if(!strncmp(argv[i],"--box[",6)){
 			int box_index = 0;

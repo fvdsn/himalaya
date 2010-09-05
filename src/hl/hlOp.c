@@ -79,6 +79,10 @@ hlOp* hlNewOp(int id){
 	op->caching 	= 0;
 	op->depth	= 0;
 	op->max_depth	= 0;
+	op->ratio	= 0.0f;
+	op->max_ratio	= 0.0f;
+	op->state_cut	= 0;
+	op->rec_level	= 0;
 	op->cache 	= NULL;
 	assert(op_library[id].id == id);
 	op->render 	= op_library[id].render;
@@ -144,7 +148,7 @@ hlOp* hlDupOp(hlOp* op){
 	return dup;
 }
 void hlFreeOp(hlOp* op){
-	fprintf(stdout,"hlFreeOp(%p)\n",(void*)op);
+	//fprintf(stdout,"hlFreeOp(%p)\n",(void*)op);
 	if(op){
 		if(op->p_numc){
 			free(op->p_num);
@@ -245,7 +249,7 @@ void hlOpCacheEnable(hlOp *op, int enabled){
 	op->caching = enabled;
 }
 void hlOpCacheFree(hlOp*op){
-	fprintf(stdout,"hlOpCacheFree(%p)\n",(void*)op);
+	//fprintf(stdout,"hlOpCacheFree(%p)\n",(void*)op);
 	if(op->cache)
 		hlFreeFrame(op->cache);
 }

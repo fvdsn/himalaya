@@ -63,13 +63,21 @@ double starttime = 0.0;
 /*box status*/
 #define MAX_BOX_COUNT 10
 int   box_count = 3;
-int   box_depth[MAX_BOX_COUNT] = {16,64,512,INT_MAX,INT_MAX, INT_MAX,INT_MAX,INT_MAX,INT_MAX,INT_MAX};
+int   max_ratio = 0;
+int   box_depth[MAX_BOX_COUNT] = {32,16,INT_MAX,INT_MAX,INT_MAX, INT_MAX,INT_MAX,INT_MAX,INT_MAX,INT_MAX};
 
 void uiHlSetBoxCount(int bcount){
 	if (bcount >= 0 && bcount <= MAX_BOX_COUNT){
 		box_count = bcount;
 	}else{
 		fprintf(stderr,"WARNING: uiHlSetBoxCount(): box count %d out of range [0,%d]\n",bcount,MAX_BOX_COUNT);
+	}
+}
+void uiHlSetMaxRatio(float mratio){
+	if (mratio >= 0.0f){
+		max_ratio = mratio;
+	}else{
+		fprintf(stderr,"WARNING: uiHlSetMaxRatio(): max ratio %f out of range [0,[\n",mratio);
 	}
 }
 void uiHlSetBoxDepth(int index, int depth){
@@ -136,14 +144,22 @@ static void	uiHlRender(uiEntity *hl,int dx, int dy, int sx, int sy, int zoomleve
 }
 static void uiHlPaintStart(uiEntity *self){
 	uiHlData *hd = (uiHlData*)self->data;
-	int i = box_count;
+	int i = 0;
 	hd->painting = 1;
 	if(uiStateMod(UI_SHIFT)){
 		hd->starting = 0;	/* continue where the previous stroke ended */
 	}
-	while(i--){
-		hlImgPushOpenBBox(hd->img,box_depth[i]);
+	while(i < box_count){
+		if(i == 0){
+			hlImgPushOpenBBox(hd->img,i,box_depth[i],max_ratio);
+		}else{
+			hlImgPushOpenBBox(hd->img,i,box_depth[i],0.0);
+		}
+		i++;
 	}
+	/*while(i--){
+		hlImgPushOpenBBox(hd->img,box_depth[i]);
+	}*/
 	UI_LOG("paint_start\n")
 }
 static void uiHlPaintEnd(uiEntity *self){
@@ -156,17 +172,18 @@ static void uiHlPaintEnd(uiEntity *self){
 static void uiHlPaintCircle(uiEntity *self, float x, float y, float radius_in, float radius_out, float opacity, float red, float green, float blue, float alpha){
 	uiHlData *hd = (uiHlData*)self->data;
 	hlColor col = hlNewColor( hd->cs,red,green,blue,0,alpha);
-	/*
+	
 	hlOp* op = hlNewOp(HL_DRAW_CIRCLE);
 	//printf("pos:%f,%f\n",x,y);
 	hlOpSetAllValue(op,"pos_center",x,y);
 	hlOpSetAllValue(op,"radius_in",radius_in);
 	hlOpSetAllValue(op,"radius_out",radius_out);
-	*/
+	/*
 	hlOp *op = hlNewOp(HL_DRAW_TRIANGLE);
 	hlOpSetAllValue(op,"v0",x,y);
 	hlOpSetAllValue(op,"v1",x+radius_out,y+radius_in);
 	hlOpSetAllValue(op,"v2",x-radius_in, y+radius_out);
+	*/
 	hlOpSetAllValue(op,"alpha",opacity);
 	hlOpSetAllColor(op,"fill_color",col);
 

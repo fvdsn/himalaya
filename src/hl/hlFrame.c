@@ -83,7 +83,7 @@ void hlFramePurge(hlFrame *f){
 	f->tilecount = 0;
 }
 void hlFreeFrame(hlFrame *f){
-	fprintf(stdout,"hlFreeFrame(%p)\n",(void*)f);
+	//fprintf(stdout,"hlFreeFrame(%p)\n",(void*)f);
 	if(f){
 		hl_free_node_tree(f->tlroot);
 		hl_free_node_tree(f->trroot);
@@ -259,7 +259,7 @@ static hlNode* hl_tile_match_set(hlNode* n,unsigned int u,unsigned int v,unsigne
 			return n->bl = hl_new_node(x,y);
 		}
 	}else{ 
-		printf("pu:%d pv:%d | u:%d v:%d | x:%d y:%d\n",pu,pv,u,v,x,y);
+		//printf("pu:%d pv:%d | u:%d v:%d | x:%d y:%d\n",pu,pv,u,v,x,y);
 		assert(0 && "big screwup");
 		return NULL;
 	}
@@ -365,7 +365,7 @@ hlTile * hlFrameTileRemove(hlFrame *f, int x, int y, int z){
 }
 void hlFrameTileFree(hlFrame *f, int x, int y, int z){
 	hlTile *t = hlFrameTileRemove(f,x,y,z);
-	fprintf(stdout,"hlFrameTileFree(%p,%d,%d,%d)\n",(void*)f,x,y,z);
+	//fprintf(stdout,"hlFrameTileFree(%p,%d,%d,%d)\n",(void*)f,x,y,z);
 	if (t){
 		hlFreeTile(t);
 	}

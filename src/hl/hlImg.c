@@ -128,7 +128,7 @@ hlState hlImgStateExists(hlImg *img, hlState state){
 hlState hlImgStateRem(hlImg *img, hlState remstate){
 	hlOp *op = NULL;
 	hlOp *tmp = NULL;
-	fprintf(stdout,"hlImgStateRem(...)");
+	//fprintf(stdout,"hlImgStateRem(...)");
 	assert(remstate != img->state);
 	assert(remstate != HL_STATE_UNSAVED);
 	assert(hlImgStateExists(img,remstate));
@@ -220,49 +220,65 @@ hlOpRef hlImgPopOp(hlImg *img){
 }*/
 
 hlOpRef hlImgPushOp(hlImg *img, hlOp* op){
-	hlOp *tmp = img->top;
+	hlOp *cur = img->top;
 	hlOp *up = NULL;
+	hlOp *dup = NULL;
 	hlOpSetBBox(op);
+	op->img = img;
+	img->state = HL_STATE_UNSAVED; 
 	hlOpSetCSIn(op,hlFrameCS(img->source));
-	//fprintf(stdout,"pushop\n");
-	while(tmp && tmp->type == HL_BBOX && tmp->open && (tmp->max_depth > op->max_depth)){
-		if(op->type != HL_BBOX){
-			hlBBoxExtend(&(tmp->bbox),&(op->bbox));
-			tmp->depth++;
-			if(tmp->depth >= tmp->max_depth && tmp->max_depth > 0){
-				tmp->open = 0;
-				hlImgPushOpenBBox(img,tmp->max_depth);
+	while(cur && cur->type == HL_BBOX && cur->open){
+		if(op->type == HL_BBOX){
+			if(op->rec_level > cur->rec_level){
+				op->skip = cur->skip;
+				op->depth++;
+				break;
+			}else if(op->rec_level == cur->rec_level-1){
+				if(cur->max_depth && cur->depth +1 >= cur->max_depth){
+					cur->depth++;
+					cur->open = 0;
+					op->skip = cur;
+					op->down = cur;
+					dup = cur;
+					break;
+				}else{
+					cur->depth++;
+				}
 			}
-			/*	hlOp* new = hlNewOp(HL_BBOX_BOX);
-			hlOpSetCSIn(new,hlFrameCS(img->source));
-			fprintf(stdout,"new_box :%d\n",tmp->max_depth);
-			tmp->open = 0;
-			new->open = 1;
-			new->skip = tmp;
-			new->down = tmp;
-			new->max_depth = tmp->max_depth;
-			if(up){
-				up->down = new;
+		}else{
+			if(cur->rec_level == 0){
+				float wasted_area = 0.0f;
+				hlBBox tmp = cur->bbox;
+				hlBBoxExtend(&tmp,&(op->bbox));
+				wasted_area = (hlBBoxArea(&tmp) - hlBBoxArea(&(cur->bbox))) / 
+						(float)hlBBoxArea(&(op->bbox));
+				cur->bbox = tmp;
+				cur->depth++;
+				cur->ratio += wasted_area;
+				//printf("w:%f,%f\n",cur->ratio,cur->max_ratio);
+				if((cur->depth >= cur->max_depth && cur->max_depth > 0)
+					|| ((cur->ratio > cur->max_ratio) && cur->max_ratio > 0.0f)){
+					cur->open = 0;
+					dup = cur;
+				}
 			}else{
-				img->top = new;
+				hlBBoxExtend(&(cur->bbox),&(op->bbox));
 			}
-			hl_img_close_box_op(new,tmp);
-			up = new;
-			tmp = new->down;*/
 		}
-		up = tmp;
-		tmp = tmp->down;
-	}	
-	insert_op(up,op,tmp);
+		up = cur;
+		cur = cur->down;
+	}
+	insert_op(up,op,cur);
 	if(up == NULL){
 		img->top    = op;
 	}
-	if(op->type == HL_BBOX && op->open){
+	if(op->type == HL_BBOX && op->open && op->skip == NULL){
 		op->skip = op->down;
 		op->depth = 0;
 	}
-	img->state  = HL_STATE_UNSAVED;
-	op->img = img;
+	if(dup){
+		hlImgPushOpenBBox(img,dup->rec_level,dup->max_depth,dup->max_ratio);
+	}
 	return op->ref;
 }
 /**
@@ -332,6 +348,19 @@ void hlImgModOpEnd(hlImg *img, hlOpRef ref){
 
 /*------------- BBOX -------------*/
 
+hlOpRef hlImgPushOpenBBox(hlImg *img,int rec_level, int max_depth,float max_ratio){
+	hlOp *op = hlNewOp(HL_BBOX_BOX);
+	op->down = NULL;
+	op->skip = NULL;
+	op->open = 1;
+	op->depth = 0;
+	op->rec_level = rec_level;
+	op->max_ratio = max_ratio;
+	op->max_depth = max_depth;
+	op->bbox.infinite = 0;
+	return hlImgPushOp(img,op);
+}
+/*
 hlOpRef hlImgPushOpenBBox(hlImg *img,int max_depth){
 	hlOp *op = hlNewOp(HL_BBOX_BOX);
 	hlOpRef ref = hlImgPushOp(img,op);
@@ -341,7 +370,7 @@ hlOpRef hlImgPushOpenBBox(hlImg *img,int max_depth){
 	op->max_depth = max_depth;
 	op->bbox.infinite = 0;
 	return ref;
-}
+}*/
 void  hlImgCloseBBox(hlImg *img){
 	hlOp *op = hl_img_get_top_op(img,HL_STATE_UNSAVED);
 	while(op && op->type == HL_BBOX && op->refcount == 0 ){
@@ -493,9 +522,23 @@ static hlTile *hl_op_render_blend(hlOp*op, int cache, int readonly, int osa, int
 	}
 }
 static hlTile *hl_op_render_bbox(hlOp*op, int cache, int readonly, int osa, int x, int y, int z){
+	const hlCS cs = hlOpGetCSIn(op);
 	hlTile *tile = NULL;
-	//hlColor cinside = hlNewColor(hlOpGetCSIn(op),0.9,1.0,0.9,0,1.0);
-	//hlColor cbox = hlNewColor(hlOpGetCSIn(op),0.99,0.99,1.0,0,1.0);
+//	hlColor cinside = hlNewColor(hlOpGetCSIn(op),0.9,1.0,0.9,0,1.0);
+//	hlColor cbox = hlNewColor(hlOpGetCSIn(op),0.99,0.99,1.0,0,1.0);
+	
+	if(!op->open){
+		tile = hlOpCacheGet(op,x,y,z);
+		if(tile){
+			if(readonly){
+				return tile;
+			}else if(hl_op_must_free_cache(op,x,y,z)){
+				return hlOpCacheRemove(op,x,y,z);
+			}else{
+				return hlTileDup(tile,cs);
+			}
+		}
+	}
 	if(hlBBoxTest(&(op->bbox),x,y,z)){ /* we are inside bbox */
 		if(op->down){
 			tile = hlOpRenderTile(op->down,cache,readonly,osa,x,y,z);
@@ -503,7 +546,7 @@ static hlTile *hl_op_render_bbox(hlOp*op, int cache, int readonly, int osa, int 
 			tile = hlFrameTileCopy(op->img->source,x,y,z);
 		}
 		//if(!readonly){
-		//	hlTileMult(tile,&cinside);
+//			hlTileMult(tile,&cinside);
 		//}
 	}else{
 		if(op->skip){
@@ -512,9 +555,20 @@ static hlTile *hl_op_render_bbox(hlOp*op, int cache, int readonly, int osa, int 
 			tile = hlFrameTileCopy(op->img->source,x,y,z);
 		}
 	}
-	//if(!readonly){
-	//	hlTileMult(tile,&cbox);
-	//}
+//	if(!readonly){
+//		hlTileMult(tile,&cbox);
+//	}
+	if(!op->open && (cache || hl_op_must_cache(op,x,y,z))){
+		int cached = hlOpCacheSet(op,tile,cs,
+				hlImgSizeX(op->img,0),
+				hlImgSizeY(op->img,0), 
+				x,y,z);
+		if(readonly || !cached){
+			return hlTileDup(tile,cs);
+		}else{
+			return hlTileDup(tile,cs);
+		}
+	}
 	return tile;
 }
 static hlTile *hl_op_render_draw(hlOp*op, int cache, int readonly, int osa, int x, int y, int z){
