@@ -32,6 +32,16 @@ float randomness = 0.0f;
 float color[4] = {1.0f, 0.0f, 0.0f, 1.0f};
 float hsva[4]  = {0.5,0.5,0.5,0.5};
 
+float rand_size = 0.0f;
+float rand_sat = 0.0f;
+float rand_lum = 0.0f;
+float rand_opacity = 0.0f;
+float rand_color = 0.0f;
+
+float dyna_factor = 0.0f;
+float dyna_size = 0.0f;
+float dyna_opacity = 0.0f;
+
 /*actions*/
 enum actions{
 	ACTION_OPACITY,
@@ -239,6 +249,18 @@ void uiHlReplayLog(const char *replayfilepath, uiEntity *hl,int skip_renders){
 		}
 	}
 }
+static float clamp(float v, float min, float max){
+	if (v < min){
+		return min;
+	}else if(v > max){
+		return max;
+	}else{
+		return v;
+	}
+}
+static float randomize(float v, float amplitude){
+	return v +((rand() - RAND_MAX/2)/(float)RAND_MAX)*amplitude;
+}
 static int uiHlMotion(uiEntity *self, float x, float y, float p){
 	uiHlData *hd = (uiHlData*)self->data;
 	float ralpha = 1.0f;
@@ -318,12 +340,24 @@ static int uiHlMotion(uiEntity *self, float x, float y, float p){
 			float rpy = (randomness*radius)*(rand()/(float)RAND_MAX - 0.5f);
 			float dstepx = dpx / dplength * step * radius;
 			float dstepy = dpy / dplength * step * radius;
+			float radius_ = radius * (1.0 - rand_size*(rand()/(float)RAND_MAX));
+			float alpha_  = alpha  * (1.0 - rand_opacity*(rand()/(float)RAND_MAX));
+			float lum = (color[0] + color[1] + color[2]) / 3.0;
+			float red_ = color[0];
+			float green_ = color[1];
+			float blue_ = color[2];
+			float sat = rand_sat*(rand()/(float)RAND_MAX);
+			float rlum = randomize(1,rand_lum);
+			red_  = clamp( randomize((lum * sat + red_*(1.0-sat)),rand_color)*rlum, 0, 1);
+			green_  = clamp( randomize((lum * sat + green_*(1.0-sat)),rand_color)*rlum, 0, 1);
+			blue_  = clamp( randomize((lum * sat + blue_*(1.0-sat)),rand_color)*rlum, 0, 1);
+			
 			hd->lpx += dstepx;
 			hd->lpy += dstepy;
 			dpx -= dstepx;
 			dpy -= dstepy;
 			dplength = sqrtf(dpx*dpx + dpy*dpy);
-			uiHlPaintCircle(self, hd->lpx + rpx, hd->lpy +rpy,radius*(1.0-softness),radius,alpha,color[0],color[1],color[2],color[3]);
+			uiHlPaintCircle(self, hd->lpx + rpx, hd->lpy +rpy,radius_*(1.0-softness),radius_,alpha_,red_,green_,blue_,color[3]);
 			hd->uptodate = 0;
 		}
 	}

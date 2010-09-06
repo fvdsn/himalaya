@@ -527,7 +527,7 @@ static hlTile *hl_op_render_bbox(hlOp*op, int cache, int readonly, int osa, int 
 //	hlColor cinside = hlNewColor(hlOpGetCSIn(op),0.9,1.0,0.9,0,1.0);
 //	hlColor cbox = hlNewColor(hlOpGetCSIn(op),0.99,0.99,1.0,0,1.0);
 	
-	if(!op->open){
+	/*if(!op->open){
 		tile = hlOpCacheGet(op,x,y,z);
 		if(tile){
 			if(readonly){
@@ -538,7 +538,7 @@ static hlTile *hl_op_render_bbox(hlOp*op, int cache, int readonly, int osa, int 
 				return hlTileDup(tile,cs);
 			}
 		}
-	}
+	}*/
 	if(hlBBoxTest(&(op->bbox),x,y,z)){ /* we are inside bbox */
 		if(op->down){
 			tile = hlOpRenderTile(op->down,cache,readonly,osa,x,y,z);
@@ -558,6 +558,7 @@ static hlTile *hl_op_render_bbox(hlOp*op, int cache, int readonly, int osa, int 
 //	if(!readonly){
 //		hlTileMult(tile,&cbox);
 //	}
+	/*
 	if(!op->open && (cache || hl_op_must_cache(op,x,y,z))){
 		int cached = hlOpCacheSet(op,tile,cs,
 				hlImgSizeX(op->img,0),
@@ -568,7 +569,7 @@ static hlTile *hl_op_render_bbox(hlOp*op, int cache, int readonly, int osa, int 
 		}else{
 			return hlTileDup(tile,cs);
 		}
-	}
+	}*/
 	return tile;
 }
 static hlTile *hl_op_render_draw(hlOp*op, int cache, int readonly, int osa, int x, int y, int z){

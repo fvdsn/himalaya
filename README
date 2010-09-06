@@ -8,11 +8,12 @@ precision.
 Compilation :
 ¨¨¨¨¨¨¨¨¨¨¨¨¨
 Dependencies :
-	a POSIX system
+	a 32bit POSIX system
 	make
 	gcc
 	libDevil
 	SDL 1.3 (gui only)
+	Cairo (gui only)
 
 to compile the program, type make in the
 src directory. The executable is named main.bin
@@ -27,4 +28,10 @@ himalaya library is in src/hl
 editing program is in src/
 
 documentation is in the headers
+
+64 Bits:
+¨¨¨¨¨¨¨¨
+The program has never been tested on a 64bit system.
+It will verly likely fail on such systems, but who knows, 
+it might be your lucky day !
 

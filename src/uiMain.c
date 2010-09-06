@@ -12,6 +12,16 @@ extern float randomness;
 extern float color[4];
 extern float hsva[4];
 
+extern float rand_size ;
+extern float rand_sat;
+extern float rand_lum;
+extern float rand_opacity;
+extern float rand_color;
+
+extern float dyna_factor;
+extern float dyna_size;
+extern float dyna_opacity;
+
 extern float hlpx; 
 extern float hlpy;
 extern float hlsx;
@@ -128,6 +138,7 @@ static uiEntity *uiToolPanel(void){
 	p = uiPanelNew("ToolPanel");
 	uiEntityAlign(p,UI_ALIGN_NORTH);
 	uiEntityFitX(p,1);
+	uiEntitySetSize(p,80,216);
 	p->margin_out = 10;
 		
 
@@ -145,19 +156,12 @@ static uiEntity *uiToolPanel(void){
 	uiEntityAdd(s,p);
 	radius_slider = s;
 
-	s = uiSliderNew("Step",1,0.1,2,0.025,0,step,&step,NULL);
+	s = uiSliderNew("Step",1,0.02,2,0.025,0,step,&step,NULL);
 	uiEntityAlign(s,UI_ALIGN_NORTH);
 	uiEntityFitX(s,1);
 	s->margin_out = 5;
 	uiEntityAdd(s,p);
 	step_slider = s;
-
-	s = uiSliderNew("Randomness",1,0,5,0.025,0,randomness,&randomness,NULL);
-	uiEntityAlign(s,UI_ALIGN_NORTH);
-	uiEntityFitX(s,1);
-	s->margin_out = 5;
-	uiEntityAdd(s,p);
-	randomness_slider = s;
 
 	s = uiSliderNew("Opacity",1,0.01,1,0.025,0,alpha,&alpha,NULL);
 	uiEntityAlign(s,UI_ALIGN_NORTH);
@@ -166,6 +170,42 @@ static uiEntity *uiToolPanel(void){
 	uiEntityAdd(s,p);
 	opacity_slider = s;
 
+	s = uiSliderNew("Rand. Pos",1,0,10,0.025,0,randomness,&randomness,NULL);
+	uiEntityAlign(s,UI_ALIGN_NORTH);
+	uiEntityFitX(s,1);
+	s->margin_out = 5;
+	uiEntityAdd(s,p);
+	randomness_slider = s;
+
+	s = uiSliderNew("Rand. Size",1,0,0.9999,0.001,0,rand_size,&rand_size,NULL);
+	uiEntityAlign(s,UI_ALIGN_NORTH);
+	uiEntityFitX(s,1);
+	s->margin_out = 5;
+	uiEntityAdd(s,p);
+
+	s = uiSliderNew("Rand. Opacity",1,0,0.9,0.005,0,rand_opacity,&rand_opacity,NULL);
+	uiEntityAlign(s,UI_ALIGN_NORTH);
+	uiEntityFitX(s,1);
+	s->margin_out = 5;
+	uiEntityAdd(s,p);
+
+	s = uiSliderNew("Rand. Lum.",1,0,0.9,0.005,0,rand_lum,&rand_lum,NULL);
+	uiEntityAlign(s,UI_ALIGN_NORTH);
+	uiEntityFitX(s,1);
+	s->margin_out = 5;
+	uiEntityAdd(s,p);
+
+	s = uiSliderNew("Rand. Sat.",1,0,0.9,0.005,0,rand_sat,&rand_sat,NULL);
+	uiEntityAlign(s,UI_ALIGN_NORTH);
+	uiEntityFitX(s,1);
+	s->margin_out = 5;
+	uiEntityAdd(s,p);
+
+	s = uiSliderNew("Rand. Color.",1,0,0.9,0.005,0,rand_color,&rand_color,NULL);
+	uiEntityAlign(s,UI_ALIGN_NORTH);
+	uiEntityFitX(s,1);
+	s->margin_out = 5;
+	uiEntityAdd(s,p);
 	return p;
 }
 static uiEntity *uiSideBar(void){
